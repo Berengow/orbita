@@ -49,6 +49,8 @@ export interface Hotspot {
   /** "theme" follows the tour-wide motion. */
   motion: HotspotMotion | "theme";
   surface: HotspotSurface;
+  /** When true, a note or media opens in a new browser tab. */
+  openInNewTab: boolean;
 }
 
 export interface SceneModules {
@@ -163,6 +165,7 @@ export interface PlayerHotspot {
   icon: HotspotIcon;
   motion: HotspotMotion | "theme";
   surface: HotspotSurface;
+  openInNewTab: boolean;
 }
 
 export interface PlayerScene {

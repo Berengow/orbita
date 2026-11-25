@@ -249,6 +249,10 @@ export function Settings() {
                   {SURFACES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
                 </select>
               </Field>
+              <SwitchRow label="Открывать в новой вкладке" hint="Выключено — карточка над точкой. Включено — новая вкладка." on={hotspot.openInNewTab} onChange={(v) => update((d) => {
+                const hs = d.scenes.find((s) => s.id === scene?.id)?.hotspots.find((h) => h.id === hotspot.id);
+                if (hs) hs.openInNewTab = v;
+              }, "skip")} />
             </Section>
             <button type="button" className="mt-3 h-8 w-full rounded-lg border border-line text-xs hover:bg-surface-2" onClick={() => update((d) => {
               const list = d.scenes.find((s) => s.id === scene?.id)?.hotspots ?? [];
@@ -259,6 +263,7 @@ export function Settings() {
                 h.icon = src.icon;
                 h.motion = src.motion;
                 h.surface = src.surface;
+                h.openInNewTab = src.openInNewTab;
               });
             })}>Скопировать стиль на точки сцены</button>
             <button type="button" className="mt-2 h-8 w-full rounded-lg border border-line text-xs text-red-400 hover:bg-surface-2" onClick={() => removeHotspot(hotspot.id)}>Удалить точку</button>

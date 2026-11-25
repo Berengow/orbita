@@ -221,6 +221,7 @@ export function blankHotspot(partial: Pick<Hotspot, "id" | "kind" | "yaw" | "pit
     icon: "auto",
     motion: "theme",
     surface: partial.kind === "link" ? "direct" : "modal",
+    openInNewTab: false,
     ...partial,
   };
 }
@@ -319,6 +320,7 @@ function normalizeHotspot(hotspot: Hotspot): Hotspot {
     icon: ICONS.has(hotspot.icon) ? hotspot.icon : "auto",
     motion,
     surface,
+    openInNewTab: Boolean(hotspot.openInNewTab),
   };
 }
 

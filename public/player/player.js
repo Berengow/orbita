@@ -42,6 +42,7 @@
   let hashReady = false;
   let pendingView = null;
   let guideAt = 0;
+  let popHotspot = null;
 
   function glyph(body, fill) {
     return '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="' + (fill ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + body + "</svg>";
@@ -552,12 +553,142 @@
       goScene(hotspot.targetSceneId);
       return;
     }
-    if (hotspot.kind === "link" && (hotspot.surface === "direct" || !hotspot.surface)) {
-      const url = safeHttp(hotspot.url);
-      if (url) window.open(url, "_blank", "noopener,noreferrer");
+    if (hotspot.openInNewTab || (hotspot.kind === "link" && (hotspot.surface === "direct" || !hotspot.surface))) {
+      openInTab(hotspot);
       return;
     }
-    openHotspot(hotspot);
+    openAnchored(hotspot);
+  }
+
+  function openInTab(hotspot) {
+    const url = safeHttp(hotspot.url);
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const title = hotspot.title || "Заметка";
+    const body = String(hotspot.text || "").replace(/[<>&]/g, (ch) => ({ "<": "<", ">": ">", "&": "&" }[ch]));
+    const safeTitle = title.replace(/[<>&]/g, (ch) => ({ "<": "<", ">": ">", "&": "&" }[ch]));
+    const html = "<!DOCTYPE html><html lang=\"ru\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>" + safeTitle + "</title><body style=\"margin:0;background:#100e0c;color:#f6f1ea;font:16px/1.5 Manrope,sans-serif\"><main style=\"max-width:40rem;margin:0 auto;padding:2rem 1.25rem\"><h1 style=\"font-size:1.6rem\">" + safeTitle + "</h1><div>" + body.replace(/\n/g, "<br>") + "</div></main>";
+    const blob = new Blob([html], { type: "text/html" });
+    const href = URL.createObjectURL(blob);
+    window.open(href, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => URL.revokeObjectURL(href), 60000);
+  }
+
+  function markerButton(id) {
+    const scene = active();
+    if (!scene) return null;
+    const refs = objects.get(scene.id) || [];
+    const obj = refs.find((item) => item.id === id);
+    if (!obj || !obj.div) return null;
+    return obj.div.querySelector(".orb-mark") || obj.div;
+  }
+
+  function fillHotspotCard(card, hotspot) {
+    const close = el("button", "orb-pop-x");
+    close.type = "button";
+    close.setAttribute("aria-label", "Закрыть");
+    close.innerHTML = SVG.close;
+    close.addEventListener("click", (event) => {
+      event.stopPropagation();
+      closeModal();
+    });
+    card.append(close);
+    card.append(el("h2", "", hotspot.title || "Точка"));
+    if (hotspot.text) {
+      const body = el("div", "orb-copy");
+      body.append(safeRich(hotspot.text));
+      card.append(body);
+    }
+    if (hotspot.kind === "image") {
+      const url = safeHttp(hotspot.url);
+      if (url) {
+        const img = document.createElement("img");
+        img.alt = hotspot.title || "";
+        img.src = url;
+        card.append(img);
+      }
+    } else if (hotspot.kind === "video") {
+      const embedSrc = videoEmbed(hotspot.url);
+      const file = safeHttp(hotspot.url);
+      if (embedSrc) {
+        const frame = document.createElement("iframe");
+        frame.src = embedSrc;
+        frame.title = hotspot.title || "Видео";
+        frame.allow = "autoplay; encrypted-media; picture-in-picture";
+        frame.allowFullscreen = true;
+        card.append(frame);
+      } else if (file) {
+        const video = document.createElement("video");
+        video.src = file;
+        video.controls = true;
+        video.playsInline = true;
+        card.append(video);
+      }
+    } else if (hotspot.kind === "audio") {
+      const url = safeHttp(hotspot.url);
+      if (url) {
+        const audio = document.createElement("audio");
+        audio.src = url;
+        audio.controls = true;
+        card.append(audio);
+      }
+    } else if (hotspot.kind === "link") {
+      const url = safeHttp(hotspot.url);
+      if (url) {
+        const a = document.createElement("a");
+        a.href = url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.className = "orb-cta";
+        a.textContent = "Открыть ссылку";
+        card.append(a);
+      }
+    }
+  }
+
+  function openAnchored(hotspot) {
+    if (popHotspot && popHotspot.id === hotspot.id) {
+      closeModal();
+      return;
+    }
+    popHotspot = hotspot;
+    modalKind = "pop";
+    modalEl.hidden = false;
+    modalEl.className = "orb-modal is-pop";
+    modalEl.replaceChildren();
+    const card = el("div", "orb-pop orb-panel");
+    card.addEventListener("pointerdown", (event) => event.stopPropagation());
+    fillHotspotCard(card, hotspot);
+    modalEl.append(card);
+    placePop();
+  }
+
+  function placePop() {
+    if (!popHotspot || modalEl.hidden) return;
+    const card = modalEl.querySelector(".orb-pop");
+    const mark = markerButton(popHotspot.id);
+    if (!card || !mark) return;
+    const rect = mark.getBoundingClientRect();
+    const host = modalEl.getBoundingClientRect();
+    const width = card.offsetWidth || 280;
+    const height = card.offsetHeight || 120;
+    const gap = 12;
+    let left = rect.left + rect.width / 2 - width / 2 - host.left;
+    let top = rect.top - height - gap - host.top;
+    let below = false;
+    if (top < 8) {
+      top = rect.bottom + gap - host.top;
+      below = true;
+    }
+    const maxLeft = Math.max(8, host.width - width - 8);
+    const maxTop = Math.max(8, host.height - height - 8);
+    left = Math.max(8, Math.min(left, maxLeft));
+    top = Math.max(8, Math.min(top, maxTop));
+    card.style.left = Math.round(left) + "px";
+    card.style.top = Math.round(top) + "px";
+    card.classList.toggle("is-below", below);
   }
 
   function safeRich(text) {
@@ -686,6 +817,7 @@
     tour.activeSceneId = id;
     cardHidden = "";
     guideAt = Date.now();
+    if (popHotspot) closeModal();
     flashTransition();
     if (scene.image) {
       emptyEl.hidden = true;
@@ -969,6 +1101,45 @@
     };
     thumbs._orbSync = sync;
     thumbs.addEventListener("scroll", sync, { passive: true });
+    let drag = null;
+    let suppressClick = false;
+    thumbs.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || (event.target.closest && event.target.closest(".orb-nudge"))) return;
+      drag = {
+        id: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        left: thumbs.scrollLeft,
+        top: thumbs.scrollTop,
+        moved: false,
+      };
+      thumbs.setPointerCapture(event.pointerId);
+    });
+    thumbs.addEventListener("pointermove", (event) => {
+      if (!drag || drag.id !== event.pointerId) return;
+      const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
+      if (dx * dx + dy * dy > 16) drag.moved = true;
+      if (!drag.moved) return;
+      thumbs.classList.add("is-grabbing");
+      if (railVertical()) thumbs.scrollTop = drag.top - dy;
+      else thumbs.scrollLeft = drag.left - dx;
+      event.preventDefault();
+    });
+    const endDrag = (event) => {
+      if (!drag || (event && drag.id !== event.pointerId)) return;
+      if (drag.moved) suppressClick = true;
+      drag = null;
+      thumbs.classList.remove("is-grabbing");
+    };
+    thumbs.addEventListener("pointerup", endDrag);
+    thumbs.addEventListener("pointercancel", endDrag);
+    thumbs.addEventListener("click", (event) => {
+      if (!suppressClick) return;
+      suppressClick = false;
+      event.preventDefault();
+      event.stopPropagation();
+    }, true);
     thumbs.addEventListener("wheel", (event) => {
       const vertical = railVertical();
       const max = vertical ? thumbs.scrollHeight - thumbs.clientHeight : thumbs.scrollWidth - thumbs.clientWidth;
@@ -1232,8 +1403,9 @@
 
   function closeModal() {
     modalKind = "";
+    popHotspot = null;
     modalEl.hidden = true;
-    modalEl.classList.remove("is-panel", "is-tooltip");
+    modalEl.classList.remove("is-panel", "is-tooltip", "is-pop");
     modalEl.replaceChildren();
   }
 
@@ -1262,6 +1434,7 @@
       const needle = uiEl.querySelector(".orb-compass b");
       if (needle) needle.style.transform = "rotate(" + -yaw + "deg)";
     }
+    placePop();
     requestAnimationFrame(tick);
   }
 
@@ -1345,6 +1518,14 @@
     guideAt = Date.now();
     step(1);
   }
+
+  window.addEventListener("pointerdown", (event) => {
+    if (!popHotspot || modalEl.hidden) return;
+    const card = modalEl.querySelector(".orb-pop");
+    if (card && card.contains(event.target)) return;
+    if (event.target.closest && event.target.closest(".orb-mark")) return;
+    closeModal();
+  });
 
   window.addEventListener("message", (event) => {
     if (event.origin !== location.origin) return;

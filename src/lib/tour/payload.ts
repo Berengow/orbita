@@ -63,6 +63,7 @@ export function toPlayerTour(
         icon: h.icon,
         motion: h.motion,
         surface: h.surface,
+        openInNewTab: h.openInNewTab,
       })),
     })),
     logoUrl: s.logoId ? (urls[s.logoId] ?? "") : "",
