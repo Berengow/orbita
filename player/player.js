@@ -135,8 +135,16 @@
     root.dataset.density = (tour.settings && tour.settings.navDensity) || "regular";
     root.dataset.photo = (tour.settings && tour.settings.navImage) || "rounded";
     root.dataset.index = tour.settings && tour.settings.navIndex ? "on" : "off";
+    root.dataset.smooth = tour.settings && tour.settings.navSmooth === false ? "off" : "on";
+    root.dataset.arrows = tour.settings && tour.settings.navArrows === false ? "off" : "on";
+    root.dataset.nudge = tour.settings && tour.settings.navNudge === false ? "off" : "on";
+    root.dataset.fade = tour.settings && tour.settings.navFade === false ? "off" : "on";
     root.style.setProperty("--orb-card-w", ((tour.settings && tour.settings.navCardWidth) || 220) + "px");
     root.style.setProperty("--orb-card-gap", ((tour.settings && tour.settings.navGap) || 8) + "px");
+    root.style.setProperty("--orb-card-text", ((tour.settings && tour.settings.navTextSize) || 13) + "px");
+    if (tour.settings && tour.settings.navTextColor) root.style.setProperty("--orb-card-ink", tour.settings.navTextColor);
+    else root.style.removeProperty("--orb-card-ink");
+    root.style.setProperty("--orb-card-radius", ((tour.settings && tour.settings.navRadius) != null ? tour.settings.navRadius : 12) + "px");
     root.dataset.carousel = carouselSide();
     root.dataset.logo = tour.settings.logoPlacement;
     root.dataset.brand = tour.settings.hideBrand ? "off" : "on";
@@ -181,7 +189,7 @@
   function structureSig() {
     return JSON.stringify({
       mode: tour.mode,
-      scenes: tour.scenes.map((scene) => [scene.id, scene.image, scene.thumb || "", Math.round(scene.yaw), Math.round(scene.pitch), scene.modules]),
+      scenes: tour.scenes.map((scene) => [scene.id, scene.image, scene.thumb || "", scene.modules]),
       logo: Boolean(tour.logoUrl),
       audio: Boolean(tour.audioUrl),
       sound: tour.settings.soundEnabled,
@@ -195,7 +203,6 @@
       groups: tour.scenes.map((scene) => (scene.group || "") + (scene.featured ? "*" : "")),
       brand: Boolean(tour.settings.hideBrand),
       place: tour.placeKind,
-      selectedCard: cardHidden,
       about: tour.scenes.some((scene) => scene.modules.about),
     });
   }
@@ -431,12 +438,11 @@
     viewer.on("mouseup", onUp);
     viewer.on("scenechange", (id) => {
       pendingScene = null;
-      cardHidden = "";
       if (!id || !tour || id === tour.activeSceneId) return;
       tour.activeSceneId = id;
       guideAt = Date.now();
       applyTheme();
-      renderChrome(true);
+      paintDynamic();
       post({ type: "scene", id: id });
     });
     if (viewer.isLoaded()) onViewerLoad();
@@ -838,7 +844,6 @@
     }
     post({ type: "scene", id: id });
     applyTheme();
-    renderChrome(false);
     paintDynamic();
     writeHash();
   }
@@ -1057,10 +1062,11 @@
     const text = el("span", "orb-row-copy");
     const index = tour.scenes.findIndex((entry) => entry.id === item.id);
     text.append(el("i", "orb-row-index", String(index + 1)));
-    text.append(el("b", "", item.name || "Сцена"));
+    text.append(el("b", "", item.caption || item.name || "Сцена"));
     text.append(el("small", "orb-row-note", item.description || ""));
     text.append(el("small", "orb-row-group", item.group || ""));
     button.append(text);
+    button.addEventListener("mousedown", (event) => event.preventDefault());
     button.addEventListener("click", () => goScene(item.id));
     return button;
   }
@@ -1356,18 +1362,6 @@
 
   function revealActiveThumb() {
     uiEl.querySelectorAll(".orb-thumbs").forEach((node) => { if (node._orbSync) node._orbSync(); });
-    const scroller = railScroller();
-    const node = uiEl.querySelector(".orb-row.is-active, .orb-thumb.is-active");
-    if (!scroller || !node) return;
-    const host = scroller.getBoundingClientRect();
-    const rect = node.getBoundingClientRect();
-    const pad = 8;
-    if (rect.left < host.left + pad) scroller.scrollLeft -= host.left + pad - rect.left;
-    else if (rect.right > host.right - pad) scroller.scrollLeft += rect.right - (host.right - pad);
-    if (rect.top < host.top + pad) scroller.scrollTop -= host.top + pad - rect.top;
-    else if (rect.bottom > host.bottom - pad) scroller.scrollTop += rect.bottom - (host.bottom - pad);
-    railScroll = { left: scroller.scrollLeft, top: scroller.scrollTop };
-    shownScene = (active() && active().id) || "";
   }
 
   const railObserver = typeof ResizeObserver !== "undefined"
@@ -1495,7 +1489,20 @@
       uiEl.append(tools);
       if (tour.placeKind) uiEl.append(el("div", "orb-hint", "Кликните по панораме"));
     }
-    restoreRail();
+    const saved = { left: railScroll.left, top: railScroll.top };
+    const pin = () => {
+      const node = railScroller();
+      if (!node) return;
+      const previous = node.style.scrollBehavior;
+      node.style.scrollBehavior = "auto";
+      node.scrollLeft = saved.left;
+      node.scrollTop = saved.top;
+      node.style.scrollBehavior = previous;
+    };
+    requestAnimationFrame(() => {
+      pin();
+      requestAnimationFrame(pin);
+    });
     paintDynamic();
   }
 
@@ -1507,11 +1514,16 @@
     const card = uiEl.querySelector(".orb-card p");
     if (card) card.textContent = scene.description;
     uiEl.querySelectorAll(".orb-thumb, .orb-row").forEach((node) => {
-      node.classList.toggle("is-active", node.dataset.scene === scene.id);
-      if (node.getAttribute("aria-current") != null) node.setAttribute("aria-current", node.dataset.scene === scene.id ? "true" : "false");
-      const span = node.querySelector("span");
       const match = tour.scenes.find((item) => item.id === node.dataset.scene);
-      if (span && match && !span.querySelector("b")) span.textContent = match.name;
+      node.classList.toggle("is-active", Boolean(match) && match.id === scene.id);
+      if (node.getAttribute("aria-current") != null) node.setAttribute("aria-current", node.dataset.scene === scene.id ? "true" : "false");
+      if (!match || !node.classList.contains("orb-row")) return;
+      const title = node.querySelector("b");
+      const note = node.querySelector(".orb-row-note");
+      const group = node.querySelector(".orb-row-group");
+      if (title) title.textContent = match.caption || match.name || "Сцена";
+      if (note) note.textContent = match.description || "";
+      if (group) group.textContent = match.group || "";
     });
     const counter = uiEl.querySelector(".orb-counter");
     if (counter) {
@@ -1535,7 +1547,7 @@
     if (sound) sound.setAttribute("aria-pressed", muted ? "false" : "true");
     panoEl.classList.toggle("is-placing", Boolean(tour.placeKind) && tour.mode === "edit");
     paintIntro();
-    revealActiveThumb();
+    uiEl.querySelectorAll(".orb-thumbs").forEach((node) => { if (node._orbSync) node._orbSync(); });
   }
 
   function step(dir) {
