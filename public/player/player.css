@@ -1355,7 +1355,10 @@ html[data-nudge="off"] .orb-nudge { display: none !important; }
 .orb-logo { font-size: calc(13px * var(--orb-logo-scale, 1)); }
 .orb-logo img { height: calc(22px * var(--orb-logo-scale, 1)) !important; }
 .orb-title { font-size: calc(15px * var(--orb-title-scale, 1)) !important; }
-.orb-thumbs { max-width: min(var(--orb-rail, 720px), calc(100vw - 48px)) !important; }
+.orb-thumbs { max-width: min(var(--orb-rail, 720px), calc(100vw - 48px)); }
+html[data-carousel="left"] .orb-thumbs,
+html[data-carousel="right"] .orb-thumbs,
+html[data-nav="side"] .orb-thumbs { max-width: none; }
 html[data-navbg="on"] .orb-carousel,
 html[data-navbg="on"] .orb-list { background: var(--orb-nav-bg) !important; }
 html[data-navline="on"] .orb-carousel,
@@ -1388,22 +1391,10 @@ html[data-navactive="on"] .orb-row.is-active { background: var(--orb-nav-active)
 .orb-sheet { box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45); }
 .orb-cta { box-shadow: 0 10px 24px color-mix(in srgb, var(--orb-accent) 35%, transparent); }
 .orb-pop { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); }
-.orb-row {
-  background: color-mix(in srgb, var(--orb-text) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--orb-text) 10%, transparent);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
-}
-.orb-row:hover {
-  background: color-mix(in srgb, var(--orb-text) 12%, transparent) !important;
-}
-.orb-row.is-active {
-  border-color: color-mix(in srgb, var(--orb-accent) 75%, transparent) !important;
-  box-shadow: inset 3px 0 0 var(--orb-accent), 0 10px 24px rgba(0, 0, 0, 0.22);
-}
-.orb-row img { box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35); }
 .orb-pano.is-fade { animation: orb-fade 0.72s ease; }
 .orb-pano.is-zoom { animation: orb-zoom 0.72s ease; }
-html[data-fade="on"] .orb-rail.is-vert.is-overflow .orb-thumbs {
+html[data-fade="on"] .orb-rail.is-vert.is-overflow.can-prev .orb-thumbs,
+html[data-fade="on"] .orb-rail.is-vert.is-overflow.can-next .orb-thumbs {
   mask-image: linear-gradient(180deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
 }
 
@@ -1433,18 +1424,6 @@ html[data-fade="on"] .orb-rail.is-vert.is-overflow .orb-thumbs {
   letter-spacing: -0.045em;
   line-height: 1.02;
 }
-.orb-carousel { position: relative; }
-.orb-carousel::before {
-  content: "";
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  top: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--orb-accent) 85%, white), transparent);
-  pointer-events: none;
-}
-.orb-row.is-active img { filter: saturate(1.12) contrast(1.04); }
 .orb-loader span { box-shadow: 0 0 18px var(--orb-accent); }
 @media (prefers-reduced-motion: reduce) {
   .orb-halo { animation: none; opacity: 0.45; }
