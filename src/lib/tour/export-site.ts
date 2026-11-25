@@ -201,6 +201,8 @@ export async function exportSiteZip(project: Project, quality: ExportQuality): P
   }
 
   const tour = toPlayerTour(project, urls, { mode: "play", placeKind: null, selectedHotspotId: null });
+  const start = project.settings.startSceneId;
+  if (start && tour.scenes.some((scene) => scene.id === start)) tour.activeSceneId = start;
   zip.file("index.html", page(project.name, tour));
   zip.file("404.html", NOT_FOUND);
   zip.file(".nojekyll", "");

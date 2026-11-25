@@ -49,6 +49,7 @@ export function Settings() {
   const removeHotspot = useTour((s) => s.removeHotspot);
   const replaceSceneImage = useTour((s) => s.replaceSceneImage);
   const removeScene = useTour((s) => s.removeScene);
+  const setSelected = useTour((s) => s.setSelected);
   const [tab, setTab] = useState<Tab>("scene");
 
   useEffect(() => {
@@ -115,6 +116,20 @@ export function Settings() {
                 const s = d.scenes.find((i) => i.id === scene.id);
                 if (s) s.featured = v;
               }, "skip")} />
+              <Field label="Цвет точек">
+                <span className="flex items-center gap-2">
+                  <input type="color" aria-label="Цвет точек сцены" value={toHex(scene.pointColor || theme.point)} onChange={(e) => update((d) => {
+                    const s = d.scenes.find((i) => i.id === scene.id);
+                    if (s) s.pointColor = e.target.value;
+                  }, "coalesce", "scene-point")} className="h-8 w-12 cursor-pointer rounded border border-line bg-transparent" />
+                  {scene.pointColor ? (
+                    <button type="button" className="text-xs text-muted" onClick={() => update((d) => {
+                      const s = d.scenes.find((i) => i.id === scene.id);
+                      if (s) s.pointColor = "";
+                    }, "skip")}>Как в теме</button>
+                  ) : <span className="text-2xs text-faint">Как в теме</span>}
+                </span>
+              </Field>
             </Section>
             <Section title="Что показывать на этой сцене">
               {MODULES.map((item) => (
@@ -141,6 +156,16 @@ export function Settings() {
               >
                 Скопировать модули на все сцены
               </button>
+            </Section>
+            <Section title="Точки на сцене">
+              {scene.hotspots.length === 0 ? (
+                <p className="text-xs text-pretty text-muted">Пока нет. Нажмите «Поставить точку» под панорамой или клавишу H.</p>
+              ) : scene.hotspots.map((item) => (
+                <button key={item.id} type="button" onClick={() => setSelected(item.id)} className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface-2">
+                  <span className="min-w-0 truncate">{item.title || KIND_LABEL[item.kind]}</span>
+                  <span className="shrink-0 text-2xs text-faint">{KIND_LABEL[item.kind]}</span>
+                </button>
+              ))}
             </Section>
             <div className="mt-4 flex gap-2">
               <label className="inline-flex h-8 cursor-pointer items-center rounded-lg border border-line px-3 text-xs hover:bg-surface-2">
@@ -173,12 +198,13 @@ export function Settings() {
                   if (hs) hs.title = e.target.value;
                 }, "coalesce", "hs-title")} />
               </Field>
-              <Field label="Текст / HTML">
+              <Field label="Текст">
                 <textarea className={`${fieldClass} min-h-20`} value={hotspot.text} onChange={(e) => update((d) => {
                   const hs = d.scenes.find((s) => s.id === scene?.id)?.hotspots.find((h) => h.id === hotspot.id);
                   if (hs) hs.text = e.target.value;
                 }, "coalesce", "hs-text")} />
               </Field>
+              <p className="-mt-1 mb-2 text-2xs text-faint">Можно простые теги: b, i, a, p, ul, li. Ссылки только https.</p>
               {hotspot.kind === "scene" && (
                 <Field label="Целевая сцена">
                   <select className={fieldClass} value={hotspot.targetSceneId} onChange={(e) => update((d) => {
@@ -224,13 +250,30 @@ export function Settings() {
                 </select>
               </Field>
             </Section>
-            <button type="button" className="mt-3 h-8 w-full rounded-lg border border-line text-xs text-red-400 hover:bg-surface-2" onClick={() => removeHotspot(hotspot.id)}>Удалить точку</button>
+            <button type="button" className="mt-3 h-8 w-full rounded-lg border border-line text-xs hover:bg-surface-2" onClick={() => update((d) => {
+              const list = d.scenes.find((s) => s.id === scene?.id)?.hotspots ?? [];
+              const src = list.find((h) => h.id === hotspot.id);
+              if (!src) return;
+              list.forEach((h) => {
+                if (h.id === src.id) return;
+                h.icon = src.icon;
+                h.motion = src.motion;
+                h.surface = src.surface;
+              });
+            })}>Скопировать стиль на точки сцены</button>
+            <button type="button" className="mt-2 h-8 w-full rounded-lg border border-line text-xs text-red-400 hover:bg-surface-2" onClick={() => removeHotspot(hotspot.id)}>Удалить точку</button>
           </div>
         )}
 
         {tab === "tour" && (
           <div className="pt-4">
             <Section title="Навигация">
+              <Field label="Стартовая сцена" hint="Скачанный сайт и «Просмотр» откроются с неё. Пусто — с той, что открыта сейчас.">
+                <select className={fieldClass} value={settings.startSceneId} onChange={(e) => update((d) => { d.settings.startSceneId = e.target.value; }, "skip")}>
+                  <option value="">Как сейчас открыта</option>
+                  {project.scenes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                </select>
+              </Field>
               <Field label="Тип карусели">
                 <select className={fieldClass} value={settings.nav} onChange={(e) => update((d) => { d.settings.nav = e.target.value as typeof settings.nav; }, "skip")}>
                   {NAV_STYLES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
@@ -303,6 +346,14 @@ export function Settings() {
                 <input className={fieldClass} value={settings.introButton} onChange={(e) => update((d) => { d.settings.introButton = e.target.value; }, "coalesce", "intro-btn")} />
               </Field>
               <p className="text-2xs text-faint">Показывается, если на сцене включён модуль «Заставка».</p>
+            </Section>
+            <Section title="Об аудитории">
+              <Field label="Заголовок кнопки">
+                <input className={fieldClass} value={settings.aboutTitle} onChange={(e) => update((d) => { d.settings.aboutTitle = e.target.value; }, "coalesce", "about-title")} />
+              </Field>
+              <Field label="Текст">
+                <textarea className={`${fieldClass} min-h-20`} value={settings.aboutBody} onChange={(e) => update((d) => { d.settings.aboutBody = e.target.value; }, "coalesce", "about-body")} />
+              </Field>
             </Section>
 
             <Section title="Звук">

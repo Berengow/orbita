@@ -8,6 +8,7 @@ export function TopBar() {
   const update = useTour((s) => s.update);
   const setDialog = useTour((s) => s.setDialog);
   const setMode = useTour((s) => s.setMode);
+  const setActive = useTour((s) => s.setActive);
   const undo = useTour((s) => s.undo);
   const redo = useTour((s) => s.redo);
   const history = useTour((s) => s.history.length);
@@ -43,8 +44,12 @@ export function TopBar() {
           <CircleHelp className="size-4 md:hidden" />
           <span className="hidden md:inline">Справка</span>
         </button>
-        <button type="button" onClick={() => setMode("play")} className="hidden h-9 rounded-lg border border-line px-3 text-sm sm:inline">
-          Открыть
+        <button type="button" onClick={() => {
+          const start = project.settings.startSceneId;
+          if (start) setActive(start);
+          setMode("play");
+        }} className="hidden h-9 rounded-lg border border-line px-3 text-sm sm:inline">
+          Просмотр
         </button>
         <button type="button" onClick={() => setDialog("export")} className="inline-flex h-9 items-center gap-1 rounded-lg bg-accent px-3 text-sm font-medium text-accent-ink">
           <Download className="size-4" />

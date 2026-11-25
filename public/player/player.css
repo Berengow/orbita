@@ -164,6 +164,14 @@ html[data-shape="diamond"] .orb-mark.is-selected::after { border-radius: 6px; }
 .orb-logo img { height: 22px; width: auto; display: block; border-radius: 4px; }
 
 html[data-logo="top-center"] .orb-logo { position: absolute; left: 50%; transform: translateX(-50%); }
+html[data-logo="top-center"] .orb-title { top: 58px; }
+html[data-carousel="bottom"] .orb-card,
+html[data-nav="strip"] .orb-card,
+html[data-nav="float"] .orb-card,
+html[data-nav="minimal"] .orb-card { bottom: 124px; }
+.orb-copy { color: var(--orb-text); font-size: 14px; line-height: 1.5; }
+.orb-copy p { margin: 0 0 8px; }
+.orb-copy a { color: var(--orb-accent); }
 html[data-logo="top-right"] .orb-top { flex-direction: row-reverse; }
 
 .orb-title {

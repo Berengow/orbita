@@ -420,7 +420,12 @@
     viewer.on("scenechange", (id) => {
       pendingScene = null;
       cardHidden = "";
-      if (id && tour && id !== tour.activeSceneId) post({ type: "scene", id: id });
+      if (!id || !tour || id === tour.activeSceneId) return;
+      tour.activeSceneId = id;
+      guideAt = Date.now();
+      applyTheme();
+      renderChrome(true);
+      post({ type: "scene", id: id });
     });
     if (viewer.isLoaded()) onViewerLoad();
     else if (panoEl.querySelector(".pnlm-error-msg")) {
@@ -555,6 +560,45 @@
     openHotspot(hotspot);
   }
 
+  function safeRich(text) {
+    const raw = String(text || "");
+    const root = document.createElement("div");
+    if (!/[<>]/.test(raw)) {
+      root.style.whiteSpace = "pre-wrap";
+      root.textContent = raw;
+      return root;
+    }
+    const tpl = document.createElement("template");
+    tpl.innerHTML = raw;
+    const allow = new Set(["B", "I", "EM", "STRONG", "BR", "P", "UL", "OL", "LI", "A", "SPAN"]);
+    const walk = (node) => {
+      [...node.childNodes].forEach((child) => {
+        if (child.nodeType === 3) return;
+        if (child.nodeType !== 1 || !allow.has(child.tagName)) {
+          child.replaceWith(document.createTextNode(child.textContent || ""));
+          return;
+        }
+        [...child.attributes].forEach((attr) => {
+          if (child.tagName === "A" && attr.name.toLowerCase() === "href" && /^https?:/i.test(attr.value)) return;
+          child.removeAttribute(attr.name);
+        });
+        if (child.tagName === "A") {
+          child.target = "_blank";
+          child.rel = "noopener noreferrer";
+        }
+        walk(child);
+      });
+    };
+    walk(tpl.content);
+    root.append(tpl.content);
+    return root;
+  }
+
+  function introBlocking() {
+    const scene = active();
+    return Boolean(tour && tour.mode === "play" && scene && scene.modules.intro && !introDismissed);
+  }
+
   function safeHttp(url) {
     const value = String(url || "").trim();
     if (/^https?:\/\//i.test(value) || /^blob:/i.test(value)) return value;
@@ -581,10 +625,9 @@
     const sheet = el("div", "orb-sheet orb-panel");
     sheet.append(el("h2", "", hotspot.title || "Точка"));
     if (hotspot.text) {
-      const p = el("p", "");
-      p.style.whiteSpace = "pre-wrap";
-      p.textContent = hotspot.text;
-      sheet.append(p);
+      const body = el("div", "orb-copy");
+      body.append(safeRich(hotspot.text));
+      sheet.append(body);
     }
     if (hotspot.kind === "image") {
       const url = safeHttp(hotspot.url);
@@ -1140,7 +1183,7 @@
       lastAudio = tour.audioUrl;
       audioEl.src = tour.audioUrl;
     }
-    if (tour.mode === "play" && !muted && introDismissed) audioEl.play().catch(() => {});
+    if (tour.mode === "play" && !muted && !introBlocking()) audioEl.play().catch(() => {});
   }
 
   function tick() {
@@ -1222,7 +1265,7 @@
   }
 
   function tickGuide() {
-    if (!tour || tour.mode !== "play" || !tour.settings.guide || !introDismissed || modalKind) {
+    if (!tour || tour.mode !== "play" || !tour.settings.guide || introBlocking() || modalKind) {
       guideAt = Date.now();
       return;
     }

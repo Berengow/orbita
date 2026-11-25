@@ -50,6 +50,8 @@ function Shell() {
   const undo = useTour((s) => s.undo);
   const redo = useTour((s) => s.redo);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [leftOpen, setLeftOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(true);
 
   useEffect(() => {
     const hasFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
@@ -98,6 +100,26 @@ function Shell() {
         event.preventDefault();
         redo();
       }
+      // Extra shortcuts
+      if (event.key.toLowerCase() === "v" && !meta) {
+        setPlace(null);
+      }
+      if (event.key.toLowerCase() === "h" && !meta) {
+        setPlace("scene");
+      }
+      if (event.key === " " && !meta) {
+        event.preventDefault();
+        setMode(mode === "play" ? "edit" : "play");
+      }
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        const state = useTour.getState();
+        const scenes = state.project?.scenes ?? [];
+        const index = scenes.findIndex((scene) => scene.id === state.project?.activeSceneId);
+        const next = scenes[index + (event.key === "ArrowDown" ? 1 : -1)];
+        if (next) state.setActive(next.id);
+      }
+      if (event.key === "[" && !meta) setLeftOpen((v) => !v);
+      if (event.key === "]" && !meta) setRightOpen((v) => !v);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -107,16 +129,30 @@ function Shell() {
     <main className="relative flex h-dvh flex-col overflow-hidden bg-bg text-fg">
       {mode === "edit" ? <TopBar /> : null}
       <div className="relative flex min-h-0 flex-1">
-        {mode === "edit" ? (
+        {mode === "edit" && leftOpen ? (
           <aside className="hidden w-rail shrink-0 border-r border-line bg-surface lg:block">
             <SceneRail onAdd={() => fileRef.current?.click()} />
           </aside>
         ) : null}
         <Stage />
-        {mode === "edit" ? (
+        {mode === "edit" && rightOpen ? (
           <aside className="hidden w-inspector shrink-0 border-l border-line bg-surface lg:block">
             <Settings />
           </aside>
+        ) : null}
+        {mode === "edit" ? (
+          <div className="absolute top-2 left-2 z-10 hidden gap-1 lg:flex">
+            <button type="button" onClick={() => setLeftOpen((v) => !v)} className="grid size-8 place-items-center rounded-lg bg-surface/80 text-muted hover:text-fg" title="Скрыть сцены ([)">
+              {leftOpen ? "◀" : "▶"}
+            </button>
+          </div>
+        ) : null}
+        {mode === "edit" ? (
+          <div className="absolute top-2 right-2 z-10 hidden gap-1 lg:flex">
+            <button type="button" onClick={() => setRightOpen((v) => !v)} className="grid size-8 place-items-center rounded-lg bg-surface/80 text-muted hover:text-fg" title="Скрыть инспектор (])">
+              {rightOpen ? "▶" : "◀"}
+            </button>
+          </div>
         ) : null}
         {mode === "play" ? (
           <button type="button" onClick={() => setMode("edit")} className="absolute top-3 left-3 z-10 h-10 rounded-full bg-surface px-4 text-sm text-fg">
@@ -268,12 +304,12 @@ function ProjectsDialog({ onClose }: { onClose: () => void }) {
 
 function HelpDialog({ onClose }: { onClose: () => void }) {
   const steps = [
-    ["1. Сцены", "«Добавить» или перетащите несколько фото 360°. Имена берутся из файлов, порядок меняется перетаскиванием."],
-    ["2. Точки", "На панораме можно поставить переход, заметку, ссылку, кадр, видео или звук. Точку перетаскивают. Значок, анимация и способ открытия правятся справа."],
-    ["3. Ракурс", "Поверните панораму и нажмите «Запомнить ракурс» — так тур откроется у зрителя."],
-    ["4. Вид", "Тема, шрифт, свой CSS и десять видов навигации применяются сразу: лента, колонка, сетка, круг, группы, поиск, шторка. Стрелки влево и вправо в просмотре листают сцены."],
-    ["5. Сайт", "«Скачать сайт» собирает ZIP с относительными путями. Его можно положить на GitHub Pages — и в корень user.github.io, и в подпапку проекта. Сервер не нужен."],
-    ["6. Проект", "Черновик хранится в браузере. Файл проекта скачивается и открывается на другом компьютере."],
+    ["1. Сцены", "«Добавить» или перетащите панорамы. Порядок меняется drag-and-drop. Панель сцен можно свернуть клавишей [."],
+    ["2. Инспектор", "Справа вкладки: Сцена, Точка, Тур, Дизайн, Пресеты. На сцене — модули и список точек. Панель сворачивается клавишей ]."],
+    ["3. Точки", "H — поставить переход. V — снять режим. Точки перетаскиваются. Список точек — на вкладке «Сцена»."],
+    ["4. Тур", "Карусель, стартовая сцена, логотип, заставка, гид и звук. Стиль точек копируется на всю сцену."],
+    ["5. Сайт", "«Скачать сайт» → ZIP. Пути относительные: и корень домена, и GitHub Pages в подпапке."],
+    ["6. Клавиши", "Пробел — просмотр. Стрелки вверх/вниз — соседняя сцена. Ctrl+Z / Ctrl+Y — отмена. [ ] — панели."],
   ];
   return (
     <Dialog title="Как собрать тур" onClose={onClose}>

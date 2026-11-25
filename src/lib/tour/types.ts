@@ -118,6 +118,7 @@ export interface Settings {
   guide: boolean;
   guideSeconds: number;
   deepLink: boolean;
+  startSceneId: string;
   carouselPlacement: CarouselPlacement;
   logoPlacement: LogoPlacement;
   logoText: string;

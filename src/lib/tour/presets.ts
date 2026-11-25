@@ -195,6 +195,7 @@ export function defaultSettings(): Settings {
     guide: false,
     guideSeconds: 8,
     deepLink: true,
+    startSceneId: "",
     carouselPlacement: "bottom",
     logoPlacement: "top-left",
     logoText: "ORBITA",
@@ -270,6 +271,9 @@ export function normalizeProject(project: Project): Project {
   settings.hideBrand = Boolean(settings.hideBrand);
   settings.guide = Boolean(settings.guide);
   settings.deepLink = settings.deepLink !== false;
+  if (settings.startSceneId && !(project.scenes ?? []).some((scene) => scene.id === settings.startSceneId)) {
+    settings.startSceneId = "";
+  }
   project.settings = settings;
 
   project.scenes = (project.scenes ?? []).map((scene) => normalizeScene(scene));

@@ -74,8 +74,9 @@ export function SceneRail({ onAdd }: { onAdd: () => void }) {
                   {src ? <img src={src} alt="" /> : null}
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate text-sm">{scene.name}</span>
-                  <span className="block text-2xs text-faint">
+                  <span className="block truncate text-sm">{scene.featured ? "★ " : ""}{scene.name}</span>
+                  <span className="block truncate text-2xs text-faint">
+                    {scene.group ? `${scene.group} · ` : ""}
                     {plural(scene.hotspots.length, "точка", "точки", "точек")}
                   </span>
                 </span>
