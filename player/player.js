@@ -130,6 +130,7 @@
     root.style.setProperty("--orb-point-ink", ink(point));
     root.dataset.shape = theme.pointShape;
     root.dataset.nav = (tour.settings && tour.settings.nav) || "strip";
+    root.dataset.look = activeLook();
     root.dataset.carousel = carouselSide();
     root.dataset.logo = tour.settings.logoPlacement;
     root.dataset.brand = tour.settings.hideBrand ? "off" : "on";
@@ -174,13 +175,14 @@
   function structureSig() {
     return JSON.stringify({
       mode: tour.mode,
-      scenes: tour.scenes.map((scene) => [scene.id, scene.image, scene.modules]),
+      scenes: tour.scenes.map((scene) => [scene.id, scene.image, scene.thumb || "", Math.round(scene.yaw), Math.round(scene.pitch), scene.modules]),
       logo: Boolean(tour.logoUrl),
       audio: Boolean(tour.audioUrl),
       sound: tour.settings.soundEnabled,
       gyro: tour.settings.gyro,
       carousel: tour.settings.carouselPlacement,
       nav: tour.settings.nav || "strip",
+      look: activeLook(),
       groups: tour.scenes.map((scene) => (scene.group || "") + (scene.featured ? "*" : "")),
       brand: Boolean(tour.settings.hideBrand),
       place: tour.placeKind,
@@ -876,16 +878,150 @@
     link: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.2.4l2-2a5 5 0 0 0-7-7l-1.2 1.1"/><path d="M14 11a5 5 0 0 0-7.2-.4l-2 2a5 5 0 0 0 7 7l1.1-1.1"/></svg>',
   };
 
+  const LOOKS = {
+    strip: ["glass", "cinema", "polaroid", "chips"],
+    side: ["stack", "film", "quiet"],
+    float: ["dock", "bubbles"],
+    grid: ["tiles", "posters"],
+    radial: ["orbit", "tight"],
+    groups: ["rows", "photos"],
+    search: ["rows", "photos"],
+    sheet: ["rows", "photos"],
+    minimal: ["plain", "capsule"],
+    hotspots: ["plain"],
+  };
+  const thumbCache = new Map();
+  const pixelCache = new Map();
+
+  function activeLook() {
+    const nav = (tour && tour.settings && tour.settings.nav) || "strip";
+    const list = LOOKS[nav] || ["plain"];
+    const chosen = tour && tour.settings && tour.settings.navLooks ? tour.settings.navLooks[nav] : "";
+    return list.indexOf(chosen) >= 0 ? chosen : list[0];
+  }
+
+  function paintThumb(img, item) {
+    if (item.thumb) {
+      img.src = item.thumb;
+      return;
+    }
+    if (!item.image) return;
+    const key = item.image + "|" + Math.round(item.yaw || 0) + "|" + Math.round(item.pitch || 0) + "|" + Math.round(item.hfov || 100);
+    const cached = thumbCache.get(key);
+    if (cached) {
+      img.src = cached;
+      return;
+    }
+    projectThumb(item.image, item.yaw || 0, item.pitch || 0, item.hfov || 100).then((url) => {
+      if (!url) return;
+      thumbCache.set(key, url);
+      if (img.isConnected) img.src = url;
+    }).catch(function () {});
+  }
+
+  function projectThumb(src, yaw, pitch, hfov) {
+    return sourcePixels(src).then((sample) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 360;
+      canvas.height = 202;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return "";
+      const out = ctx.createImageData(360, 202);
+      projectEquirect(sample, yaw, pitch, hfov, out);
+      ctx.putImageData(out, 0, 0);
+      return canvas.toDataURL("image/jpeg", 0.82);
+    });
+  }
+
+  function sourcePixels(src) {
+    const hit = pixelCache.get(src);
+    if (hit) return Promise.resolve(hit);
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, 960 / image.width);
+        const w = Math.max(2, Math.round(image.width * scale));
+        const h = Math.max(2, Math.round(image.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) {
+          reject(new Error("canvas"));
+          return;
+        }
+        ctx.drawImage(image, 0, 0, w, h);
+        const data = ctx.getImageData(0, 0, w, h);
+        pixelCache.set(src, data);
+        resolve(data);
+      };
+      image.onerror = () => reject(new Error("image"));
+      image.src = src;
+    });
+  }
+
+  function projectEquirect(sample, yaw, pitch, hfov, out) {
+    const sw = sample.width;
+    const sh = sample.height;
+    const src = sample.data;
+    const dst = out.data;
+    const ow = out.width;
+    const oh = out.height;
+    const cosY = Math.cos(yaw * Math.PI / 180);
+    const sinY = Math.sin(yaw * Math.PI / 180);
+    const cosP = Math.cos(pitch * Math.PI / 180);
+    const sinP = Math.sin(pitch * Math.PI / 180);
+    const tanH = Math.tan((Math.min(120, Math.max(50, hfov)) * Math.PI / 180) / 2);
+    const aspect = ow / oh;
+    for (let y = 0; y < oh; y++) {
+      const vy = (1 - ((y + 0.5) / oh) * 2) * tanH / aspect;
+      for (let x = 0; x < ow; x++) {
+        let vx = (((x + 0.5) / ow) * 2 - 1) * tanH;
+        let vz = 1;
+        const len = Math.hypot(vx, vy, vz);
+        vx /= len;
+        const vyN = vy / len;
+        vz /= len;
+        const y1 = vyN * cosP + vz * sinP;
+        const z1 = -vyN * sinP + vz * cosP;
+        const x2 = vx * cosY + z1 * sinY;
+        const z2 = -vx * sinY + z1 * cosY;
+        const lon = Math.atan2(x2, z2);
+        const lat = Math.asin(Math.max(-1, Math.min(1, y1)));
+        let uu = ((lon / (Math.PI * 2) + 0.5) * sw) % sw;
+        if (uu < 0) uu += sw;
+        const vv = Math.max(0, Math.min(sh - 1.001, (0.5 - lat / Math.PI) * sh));
+        const x0 = Math.floor(uu);
+        const y0 = Math.floor(vv);
+        const x1 = (x0 + 1) % sw;
+        const y1i = Math.min(sh - 1, y0 + 1);
+        const tx = uu - x0;
+        const ty = vv - y0;
+        const i = (y * ow + x) * 4;
+        const i00 = (y0 * sw + x0) * 4;
+        const i10 = (y0 * sw + x1) * 4;
+        const i01 = (y1i * sw + x0) * 4;
+        const i11 = (y1i * sw + x1) * 4;
+        for (let c = 0; c < 3; c++) {
+          const a = src[i00 + c] * (1 - tx) + src[i10 + c] * tx;
+          const b = src[i01 + c] * (1 - tx) + src[i11 + c] * tx;
+          dst[i + c] = a * (1 - ty) + b * ty;
+        }
+        dst[i + 3] = 255;
+      }
+    }
+  }
+
   function sceneThumb(item, scene, className) {
     const button = el("button", className + (item.id === scene.id ? " is-active" : "") + (item.featured ? " is-featured" : ""));
     button.type = "button";
     button.dataset.scene = item.id;
     button.setAttribute("aria-label", item.name || "Сцена");
     button.setAttribute("aria-current", item.id === scene.id ? "true" : "false");
-    if (item.image) {
+    if (item.image || item.thumb) {
       const img = document.createElement("img");
       img.alt = "";
-      img.src = item.image;
+      paintThumb(img, item);
       button.append(img);
     }
     button.append(el("span", "", item.name || "Сцена"));
@@ -897,10 +1033,10 @@
     const button = el("button", "orb-row" + (item.id === scene.id ? " is-active" : ""));
     button.type = "button";
     button.dataset.scene = item.id;
-    if (item.image) {
+    if (item.image || item.thumb) {
       const img = document.createElement("img");
       img.alt = "";
-      img.src = item.image;
+      paintThumb(img, item);
       button.append(img);
     }
     const text = el("span", "orb-row-copy");
@@ -949,9 +1085,10 @@
         const items = tour.scenes.slice(0, 8);
         items.forEach((item, index) => {
           const angle = (Math.PI * 2 * index) / Math.max(items.length, 1) - Math.PI / 2;
+          const radius = activeLook() === "tight" ? 78 : 108;
           const button = sceneThumb(item, scene, "orb-thumb orb-radial-item");
-          button.style.left = Math.round(Math.cos(angle) * 108) + "px";
-          button.style.top = Math.round(Math.sin(angle) * 108) + "px";
+          button.style.left = Math.round(Math.cos(angle) * radius) + "px";
+          button.style.top = Math.round(Math.sin(angle) * radius) + "px";
           wrap.append(button);
         });
       }
