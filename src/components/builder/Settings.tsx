@@ -136,6 +136,10 @@ export function Settings() {
                   ) : <span className="text-2xs text-faint">Как в теме</span>}
                 </span>
               </Field>
+              <SliderRow label="Поле зрения" value={Math.round(scene.hfov)} min={40} step={1} max={120} text={`${Math.round(scene.hfov)}°`} onChange={(v) => update((d) => {
+                const s = d.scenes.find((i) => i.id === scene.id);
+                if (s) s.hfov = v;
+              }, "coalesce", "scene-hfov")} />
             </Section>
             <Section title="Что показывать на этой сцене">
               {MODULES.map((item) => (
@@ -260,6 +264,24 @@ export function Settings() {
                 if (hs) hs.openInNewTab = v;
               }, "skip")} />
             </Section>
+            <Section title="Вид этой точки">
+              <Field label="Цвет" hint="Пусто — цвет сцены или темы.">
+                <span className="flex items-center gap-2">
+                  <input type="color" aria-label="Цвет точки" value={toHex(hotspot.color || scene?.pointColor || theme.point)} onChange={(e) => update((d) => {
+                    const hs = d.scenes.find((s) => s.id === scene?.id)?.hotspots.find((h) => h.id === hotspot.id);
+                    if (hs) hs.color = e.target.value;
+                  }, "coalesce", "hs-color")} className="h-8 w-12 cursor-pointer rounded border border-line bg-transparent" />
+                  <button type="button" className="text-xs text-muted" onClick={() => update((d) => {
+                    const hs = d.scenes.find((s) => s.id === scene?.id)?.hotspots.find((h) => h.id === hotspot.id);
+                    if (hs) hs.color = "";
+                  }, "skip")}>{hotspot.color ? "Как в теме" : "Сейчас как в теме"}</button>
+                </span>
+              </Field>
+              <SliderRow label="Размер" value={Math.round((hotspot.scale || 1) * 100)} min={40} step={1} max={240} text={`${Math.round((hotspot.scale || 1) * 100)}%`} onChange={(v) => update((d) => {
+                const hs = d.scenes.find((s) => s.id === scene?.id)?.hotspots.find((h) => h.id === hotspot.id);
+                if (hs) hs.scale = v / 100;
+              }, "coalesce", "hs-scale")} />
+            </Section>
             <button type="button" className="mt-3 h-8 w-full rounded-lg border border-line text-xs hover:bg-surface-2" onClick={() => update((d) => {
               const list = d.scenes.find((s) => s.id === scene?.id)?.hotspots ?? [];
               const src = list.find((h) => h.id === hotspot.id);
@@ -270,6 +292,8 @@ export function Settings() {
                 h.motion = src.motion;
                 h.surface = src.surface;
                 h.openInNewTab = src.openInNewTab;
+                h.color = src.color;
+                h.scale = src.scale;
               });
             })}>Скопировать стиль на точки сцены</button>
             <button type="button" className="mt-2 h-8 w-full rounded-lg border border-line text-xs text-red-400 hover:bg-surface-2" onClick={() => removeHotspot(hotspot.id)}>Удалить точку</button>
@@ -327,6 +351,10 @@ export function Settings() {
               ) : null}
               <SwitchRow label="Deep link (хеш в URL)" on={settings.deepLink} onChange={(v) => update((d) => { d.settings.deepLink = v; }, "skip")} />
               <SliderRow label="Север, градусы" value={settings.northOffset} min={0} step={1} max={360} text={`${Math.round(settings.northOffset)}°`} onChange={(v) => update((d) => { d.settings.northOffset = v; }, "coalesce", "north")} />
+              <SliderRow label="Мин. зум" value={settings.minHfov} min={30} step={1} max={90} text={`${Math.round(settings.minHfov)}°`} onChange={(v) => update((d) => { d.settings.minHfov = v; }, "coalesce", "minfov")} />
+              <SliderRow label="Макс. зум" value={settings.maxHfov} min={70} step={1} max={140} text={`${Math.round(settings.maxHfov)}°`} onChange={(v) => update((d) => { d.settings.maxHfov = v; }, "coalesce", "maxfov")} />
+              <SliderRow label="Размер логотипа" value={Math.round(settings.logoScale * 100)} min={60} step={1} max={200} text={`${Math.round(settings.logoScale * 100)}%`} onChange={(v) => update((d) => { d.settings.logoScale = v / 100; }, "coalesce", "logo-scale")} />
+              <SliderRow label="Размер названия" value={Math.round(settings.titleScale * 100)} min={70} step={1} max={180} text={`${Math.round(settings.titleScale * 100)}%`} onChange={(v) => update((d) => { d.settings.titleScale = v / 100; }, "coalesce", "title-scale")} />
             </Section>
             <Section title="Заставка">
               <Field label="Заголовок">
@@ -460,7 +488,15 @@ export function Settings() {
                   {TRANSITIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
                 </select>
               </Field>
-              <SliderRow label="Размер превью" value={settings.thumbSize} min={64} step={1} max={140} text={`${settings.thumbSize}px`} onChange={(v) => update((d) => { d.settings.thumbSize = v; }, "coalesce", "thumb")} />
+              <SliderRow label="Размер превью" value={settings.thumbSize} min={48} step={1} max={240} text={`${settings.thumbSize}px`} onChange={(v) => update((d) => { d.settings.thumbSize = v; }, "coalesce", "thumb")} />
+              <SliderRow label="Ширина карусели" value={settings.navRail} min={320} step={10} max={1400} text={`${settings.navRail}px`} onChange={(v) => update((d) => { d.settings.navRail = v; }, "coalesce", "rail")} />
+              <SliderRow label="Плотность панели" value={Math.round(settings.navOpacity * 100)} min={35} step={1} max={100} text={`${Math.round(settings.navOpacity * 100)}%`} onChange={(v) => update((d) => { d.settings.navOpacity = v / 100; }, "coalesce", "navop")} />
+              <ColorRow label="Фон карусели" value={settings.navBg || theme.panel} onChange={(v) => update((d) => { d.settings.navBg = v; }, "skip")} />
+              <button type="button" className="mb-2 text-2xs text-muted" onClick={() => update((d) => { d.settings.navBg = ""; }, "skip")}>Фон как в теме</button>
+              <ColorRow label="Обводка" value={settings.navBorder || theme.text} onChange={(v) => update((d) => { d.settings.navBorder = v; }, "skip")} />
+              <button type="button" className="mb-2 text-2xs text-muted" onClick={() => update((d) => { d.settings.navBorder = ""; }, "skip")}>Обводка как в теме</button>
+              <ColorRow label="Активная карточка" value={settings.navActive || theme.accent} onChange={(v) => update((d) => { d.settings.navActive = v; }, "skip")} />
+              <button type="button" className="mb-2 text-2xs text-muted" onClick={() => update((d) => { d.settings.navActive = ""; }, "skip")}>Активная как в теме</button>
             </Section>
             <Section title="Миниатюры">
               <p className="mb-2 text-2xs text-pretty text-muted">По умолчанию кадр стартового ракурса. Своя картинка заменяет его только в карусели.</p>
@@ -522,9 +558,13 @@ export function Settings() {
               <SliderRow label="Прозрачность панелей" value={Math.round(theme.opacity * 100)} min={45} step={1} max={100} text={`${Math.round(theme.opacity * 100)}%`} onChange={(v) => update((d) => { d.theme.opacity = v / 100; d.theme.preset = "custom"; }, "coalesce", "opacity")} />
               <SliderRow label="Размытие" value={theme.blur} min={0} step={1} max={32} text={`${theme.blur}px`} onChange={(v) => update((d) => { d.theme.blur = v; d.theme.preset = "custom"; }, "coalesce", "blur")} />
               <SliderRow label="Масштаб UI" value={Math.round(theme.uiScale * 100)} min={85} step={1} max={125} text={`${Math.round(theme.uiScale * 100)}%`} onChange={(v) => update((d) => { d.theme.uiScale = v / 100; d.theme.preset = "custom"; }, "coalesce", "scale")} />
+              <SliderRow label="Тень панелей" value={theme.shadow} min={0} step={1} max={48} text={`${theme.shadow}px`} onChange={(v) => update((d) => { d.theme.shadow = v; d.theme.preset = "custom"; }, "coalesce", "shadow")} />
+              <SliderRow label="Интервал темы" value={theme.gap} min={4} step={1} max={24} text={`${theme.gap}px`} onChange={(v) => update((d) => { d.theme.gap = v; d.theme.preset = "custom"; }, "coalesce", "gap")} />
             </Section>
             <Section title="Точки">
-              <SliderRow label="Размер" value={Math.round(theme.pointScale * 100)} min={70} step={1} max={160} text={`${Math.round(theme.pointScale * 100)}%`} onChange={(v) => update((d) => { d.theme.pointScale = v / 100; d.theme.preset = "custom"; }, "coalesce", "pscale")} />
+              <SliderRow label="Размер" value={Math.round(theme.pointScale * 100)} min={40} step={1} max={240} text={`${Math.round(theme.pointScale * 100)}%`} onChange={(v) => update((d) => { d.theme.pointScale = v / 100; d.theme.preset = "custom"; }, "coalesce", "pscale")} />
+              <SliderRow label="Толщина обводки" value={theme.pointBorder} min={0} step={1} max={8} text={`${theme.pointBorder}px`} onChange={(v) => update((d) => { d.theme.pointBorder = v; d.theme.preset = "custom"; }, "coalesce", "pborder")} />
+              <SliderRow label="Размер подписи" value={Math.round(theme.labelScale * 100)} min={70} step={1} max={180} text={`${Math.round(theme.labelScale * 100)}%`} onChange={(v) => update((d) => { d.theme.labelScale = v / 100; d.theme.preset = "custom"; }, "coalesce", "label")} />
               <Field label="Форма">
                 <select className={fieldClass} value={theme.pointShape} onChange={(e) => update((d) => { d.theme.pointShape = e.target.value as typeof theme.pointShape; d.theme.preset = "custom"; }, "skip")}>
                   <option value="circle">Круг</option>
@@ -664,7 +704,7 @@ function toHex(value: string): string {
 
 const THEME_KEYS = [
   "accent", "panel", "text", "point", "font", "radius", "opacity", "blur",
-  "pointScale", "pointShape", "uiScale", "shadow", "gap", "hotspotMotion", "customCss",
+  "pointScale", "pointShape", "uiScale", "shadow", "gap", "hotspotMotion", "customCss", "pointBorder", "labelScale",
 ] as const;
 
 function downloadTheme(theme: Theme) {

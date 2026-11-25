@@ -54,6 +54,10 @@ export interface Hotspot {
   surface: HotspotSurface;
   /** When true, a note or media opens in a new browser tab. */
   openInNewTab: boolean;
+  /** Empty uses the scene or theme color. */
+  color: string;
+  /** 1 follows the theme size. */
+  scale: number;
 }
 
 export interface SceneModules {
@@ -111,6 +115,8 @@ export interface Theme {
   gap: number;
   hotspotMotion: HotspotMotion;
   customCss: string;
+  pointBorder: number;
+  labelScale: number;
 }
 
 export interface Settings {
@@ -139,6 +145,14 @@ export interface Settings {
   navTextSize: number;
   navTextColor: string;
   navRadius: number;
+  /** Max width of the carousel strip. */
+  navRail: number;
+  navBg: string;
+  navBorder: string;
+  navActive: string;
+  navOpacity: number;
+  logoScale: number;
+  titleScale: number;
   transition: SceneTransition;
   thumbSize: number;
   hideBrand: boolean;
@@ -191,6 +205,8 @@ export interface PlayerHotspot {
   motion: HotspotMotion | "theme";
   surface: HotspotSurface;
   openInNewTab: boolean;
+  color: string;
+  scale: number;
 }
 
 export interface PlayerScene {
@@ -242,6 +258,13 @@ export interface PlayerTour {
     navTextSize: number;
     navTextColor: string;
     navRadius: number;
+    navRail: number;
+    navBg: string;
+    navBorder: string;
+    navActive: string;
+    navOpacity: number;
+    logoScale: number;
+    titleScale: number;
     transition: SceneTransition;
     thumbSize: number;
     hideBrand: boolean;

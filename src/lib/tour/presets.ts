@@ -229,6 +229,8 @@ export function defaultTheme(): Theme {
     gap: 8,
     hotspotMotion: "pulse",
     customCss: "",
+    pointBorder: 0,
+    labelScale: 1,
   };
 }
 
@@ -256,6 +258,13 @@ export function defaultSettings(): Settings {
     navTextSize: 13,
     navTextColor: "",
     navRadius: 12,
+    navRail: 720,
+    navBg: "",
+    navBorder: "",
+    navActive: "",
+    navOpacity: 1,
+    logoScale: 1,
+    titleScale: 1,
     transition: "fade",
     thumbSize: 96,
     hideBrand: false,
@@ -289,6 +298,8 @@ export function blankHotspot(partial: Pick<Hotspot, "id" | "kind" | "yaw" | "pit
     motion: "theme",
     surface: partial.kind === "link" ? "direct" : "modal",
     openInNewTab: false,
+    color: "",
+    scale: 1,
     ...partial,
   };
 }
@@ -312,11 +323,13 @@ export function normalizeProject(project: Project): Project {
   theme.radius = num(theme.radius, 16, 0, 28);
   theme.opacity = num(theme.opacity > 1 ? theme.opacity / 100 : theme.opacity, 0.78, 0.45, 1);
   theme.blur = num(theme.blur, 18, 0, 32);
-  theme.pointScale = num(theme.pointScale > 3 ? theme.pointScale / 100 : theme.pointScale, 1, 0.7, 1.6);
+  theme.pointScale = num(theme.pointScale > 3 ? theme.pointScale / 100 : theme.pointScale, 1, 0.4, 2.4);
   theme.uiScale = num(theme.uiScale > 2 ? theme.uiScale / 100 : theme.uiScale, 1, 0.85, 1.25);
   theme.shadow = num(theme.shadow, 22, 0, 48);
   theme.gap = num(theme.gap, 8, 4, 24);
   theme.customCss = String(theme.customCss || "").slice(0, 4000);
+  theme.pointBorder = num(theme.pointBorder, 0, 0, 8);
+  theme.labelScale = num(theme.labelScale, 1, 0.7, 1.8);
   project.theme = theme;
 
   const settings = { ...defaultSettings(), ...(project.settings ?? {}) };
@@ -353,6 +366,13 @@ export function normalizeProject(project: Project): Project {
   settings.navTextSize = num(settings.navTextSize, 13, 10, 22);
   settings.navTextColor = hex(settings.navTextColor);
   settings.navRadius = num(settings.navRadius, 12, 0, 28);
+  settings.navRail = num(settings.navRail, 720, 320, 1400);
+  settings.navBg = hex(settings.navBg);
+  settings.navBorder = hex(settings.navBorder);
+  settings.navActive = hex(settings.navActive);
+  settings.navOpacity = num(settings.navOpacity, 1, 0.35, 1);
+  settings.logoScale = num(settings.logoScale, 1, 0.6, 2);
+  settings.titleScale = num(settings.titleScale, 1, 0.7, 1.8);
   if (settings.transition !== "fade" && settings.transition !== "zoom" && settings.transition !== "none") {
     settings.transition = "fade";
   }
@@ -362,7 +382,7 @@ export function normalizeProject(project: Project): Project {
   if (settings.logoPlacement !== "top-left" && settings.logoPlacement !== "top-center" && settings.logoPlacement !== "top-right") {
     settings.logoPlacement = "top-left";
   }
-  settings.thumbSize = num(settings.thumbSize, 96, 64, 140);
+  settings.thumbSize = num(settings.thumbSize, 96, 48, 240);
   settings.guideSeconds = num(settings.guideSeconds, 8, 3, 60);
   settings.minHfov = num(settings.minHfov, 50, 30, 90);
   settings.maxHfov = num(settings.maxHfov, 120, 90, 140);
@@ -422,6 +442,8 @@ function normalizeHotspot(hotspot: Hotspot): Hotspot {
     motion,
     surface,
     openInNewTab: Boolean(hotspot.openInNewTab),
+    color: hex(hotspot.color),
+    scale: num(hotspot.scale || 1, 1, 0.4, 2.4),
   };
 }
 
