@@ -421,6 +421,16 @@ export function Settings() {
                   <option value="comfy">Просторно</option>
                 </select>
               </Field>
+              <Field label="Форма кадра">
+                <select className={fieldClass} value={settings.navImage} onChange={(e) => update((d) => { d.settings.navImage = e.target.value as typeof settings.navImage; }, "skip")}>
+                  <option value="rounded">Скруглённый</option>
+                  <option value="square">Прямой</option>
+                  <option value="circle">Круг</option>
+                </select>
+              </Field>
+              <SliderRow label="Ширина карточки" value={settings.navCardWidth} min={160} step={2} max={340} text={`${settings.navCardWidth}px`} onChange={(v) => update((d) => { d.settings.navCardWidth = v; }, "coalesce", "cardw")} />
+              <SliderRow label="Отступ" value={settings.navGap} min={2} step={1} max={24} text={`${settings.navGap}px`} onChange={(v) => update((d) => { d.settings.navGap = v; }, "coalesce", "cardgap")} />
+              <SwitchRow label="Номер сцены" hint="Маленькая цифра порядка перед названием." on={settings.navIndex} onChange={(v) => update((d) => { d.settings.navIndex = v; }, "skip")} />
             </Section>
             <Section title="Размер и положение">
               <Field label="Положение" hint="Для ленты, колонки и плавающей. Сетка и шторка открываются своей кнопкой.">

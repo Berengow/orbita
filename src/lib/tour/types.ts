@@ -33,6 +33,7 @@ export type NavStyle =
   | "hotspots";
 export type NavDetail = "name" | "note" | "full";
 export type NavDensity = "compact" | "regular" | "comfy";
+export type NavImage = "rounded" | "square" | "circle";
 export type SceneTransition = "fade" | "zoom" | "none";
 export type CarouselPlacement = "bottom" | "left" | "right";
 export type LogoPlacement = "top-left" | "top-center" | "top-right";
@@ -125,6 +126,10 @@ export interface Settings {
   /** How much text each scene card shows. */
   navDetail: NavDetail;
   navDensity: NavDensity;
+  navCardWidth: number;
+  navGap: number;
+  navImage: NavImage;
+  navIndex: boolean;
   transition: SceneTransition;
   thumbSize: number;
   hideBrand: boolean;
@@ -216,6 +221,10 @@ export interface PlayerTour {
     navFilter: boolean;
     navDetail: NavDetail;
     navDensity: NavDensity;
+    navCardWidth: number;
+    navGap: number;
+    navImage: NavImage;
+    navIndex: boolean;
     transition: SceneTransition;
     thumbSize: number;
     hideBrand: boolean;

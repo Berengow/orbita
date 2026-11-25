@@ -245,6 +245,10 @@ export function defaultSettings(): Settings {
     navFilter: false,
     navDetail: "note",
     navDensity: "regular",
+    navCardWidth: 220,
+    navGap: 8,
+    navImage: "rounded",
+    navIndex: false,
     transition: "fade",
     thumbSize: 96,
     hideBrand: false,
@@ -325,6 +329,12 @@ export function normalizeProject(project: Project): Project {
   if (settings.navDensity !== "compact" && settings.navDensity !== "regular" && settings.navDensity !== "comfy") {
     settings.navDensity = "regular";
   }
+  settings.navCardWidth = num(settings.navCardWidth, 220, 160, 340);
+  settings.navGap = num(settings.navGap, 8, 2, 24);
+  if (settings.navImage !== "rounded" && settings.navImage !== "square" && settings.navImage !== "circle") {
+    settings.navImage = "rounded";
+  }
+  settings.navIndex = Boolean(settings.navIndex);
   if (settings.transition !== "fade" && settings.transition !== "zoom" && settings.transition !== "none") {
     settings.transition = "fade";
   }
