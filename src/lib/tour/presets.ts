@@ -242,6 +242,9 @@ export function defaultSettings(): Settings {
     maxHfov: 120,
     nav: "strip",
     navLooks: {},
+    navFilter: false,
+    navDetail: "note",
+    navDensity: "regular",
     transition: "fade",
     thumbSize: 96,
     hideBrand: false,
@@ -315,6 +318,13 @@ export function normalizeProject(project: Project): Project {
     if (value && NAV_LOOKS[key].some((item) => item.id === value)) looks[key] = value;
   });
   settings.navLooks = looks;
+  settings.navFilter = Boolean(settings.navFilter);
+  if (settings.navDetail !== "name" && settings.navDetail !== "note" && settings.navDetail !== "full") {
+    settings.navDetail = "note";
+  }
+  if (settings.navDensity !== "compact" && settings.navDensity !== "regular" && settings.navDensity !== "comfy") {
+    settings.navDensity = "regular";
+  }
   if (settings.transition !== "fade" && settings.transition !== "zoom" && settings.transition !== "none") {
     settings.transition = "fade";
   }

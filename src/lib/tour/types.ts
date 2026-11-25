@@ -31,6 +31,8 @@ export type NavStyle =
   | "minimal"
   | "sheet"
   | "hotspots";
+export type NavDetail = "name" | "note" | "full";
+export type NavDensity = "compact" | "regular" | "comfy";
 export type SceneTransition = "fade" | "zoom" | "none";
 export type CarouselPlacement = "bottom" | "left" | "right";
 export type LogoPlacement = "top-left" | "top-center" | "top-right";
@@ -118,6 +120,11 @@ export interface Settings {
   nav: NavStyle;
   /** Remembered look id for each carousel type. */
   navLooks: Partial<Record<NavStyle, string>>;
+  /** Search field on carousels other than «Поиск» (that type always has it). */
+  navFilter: boolean;
+  /** How much text each scene card shows. */
+  navDetail: NavDetail;
+  navDensity: NavDensity;
   transition: SceneTransition;
   thumbSize: number;
   hideBrand: boolean;
@@ -206,6 +213,9 @@ export interface PlayerTour {
     maxHfov: number;
     nav: NavStyle;
     navLooks: Partial<Record<NavStyle, string>>;
+    navFilter: boolean;
+    navDetail: NavDetail;
+    navDensity: NavDensity;
     transition: SceneTransition;
     thumbSize: number;
     hideBrand: boolean;

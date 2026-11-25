@@ -404,6 +404,24 @@ export function Settings() {
                 })}
               </div>
             </Section>
+            <Section title="Карточка">
+              <p className="mb-2 text-2xs text-pretty text-muted">Во всех типах одна и та же карточка, что в поиске: кадр, имя и текст. Меняется только раскладка.</p>
+              <SwitchRow label="Строка поиска" hint="В типе «Поиск» поле есть всегда. Включите, чтобы оно появилось и в остальных." on={settings.navFilter} onChange={(v) => update((d) => { d.settings.navFilter = v; }, "skip")} />
+              <Field label="Текст карточки">
+                <select className={fieldClass} value={settings.navDetail} onChange={(e) => update((d) => { d.settings.navDetail = e.target.value as typeof settings.navDetail; }, "skip")}>
+                  <option value="name">Только имя</option>
+                  <option value="note">Имя и описание</option>
+                  <option value="full">Имя, описание и группа</option>
+                </select>
+              </Field>
+              <Field label="Плотность">
+                <select className={fieldClass} value={settings.navDensity} onChange={(e) => update((d) => { d.settings.navDensity = e.target.value as typeof settings.navDensity; }, "skip")}>
+                  <option value="compact">Компактно</option>
+                  <option value="regular">Обычно</option>
+                  <option value="comfy">Просторно</option>
+                </select>
+              </Field>
+            </Section>
             <Section title="Размер и положение">
               <Field label="Положение" hint="Для ленты, колонки и плавающей. Сетка и шторка открываются своей кнопкой.">
                 <select className={fieldClass} value={settings.carouselPlacement} onChange={(e) => update((d) => { d.settings.carouselPlacement = e.target.value as typeof settings.carouselPlacement; }, "skip")}>
