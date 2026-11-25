@@ -54,6 +54,7 @@ interface TourStore {
   reorderScenes: (fromId: string, toId: string) => void;
   removeHotspot: (id: string) => void;
   setLogo: (file: File | null) => Promise<void>;
+  setSceneThumb: (sceneId: string, file: File | null) => Promise<void>;
   setAudio: (file: File | null) => Promise<void>;
   applyPreset: (id: string) => void;
   newProject: (name: string, demo: boolean) => Promise<void>;
@@ -95,7 +96,10 @@ function upsertSummary(list: ProjectSummary[], project: Project): ProjectSummary
 async function hydrate(project: Project): Promise<Record<string, string>> {
   const urls: Record<string, string> = {};
   const ids = new Set<string>();
-  for (const scene of project.scenes) ids.add(scene.imageId);
+  for (const scene of project.scenes) {
+    ids.add(scene.imageId);
+    if (scene.thumbId) ids.add(scene.thumbId);
+  }
   if (project.settings.logoId) ids.add(project.settings.logoId);
   if (project.settings.audioId) ids.add(project.settings.audioId);
   for (const id of ids) {
@@ -131,6 +135,7 @@ function blankScene(name: string, imageId: string, index: number): Scene {
     group: "",
     featured: false,
     pointColor: "",
+    thumbId: "",
     hotspots: [],
     modules: defaultModules(),
   };
@@ -385,11 +390,21 @@ export const useTour = create<TourStore>((set, get) => ({
       await idb.putBlob(imageId, blob);
       urls[imageId] = URL.createObjectURL(blob);
     }
+    let thumbId = "";
+    if (scene.thumbId) {
+      const thumb = await idb.getBlob(scene.thumbId);
+      if (thumb) {
+        thumbId = uid("thm");
+        await idb.putBlob(thumbId, thumb);
+        urls[thumbId] = URL.createObjectURL(thumb);
+      }
+    }
     const copy: Scene = {
       ...structuredClone(scene),
       id: uid("scn"),
       name: `${scene.name} · копия`,
       imageId,
+      thumbId,
       hotspots: scene.hotspots.map((hotspot) => ({ ...hotspot, id: uid("hs") })),
     };
     set({ urls });
@@ -437,6 +452,29 @@ export const useTour = create<TourStore>((set, get) => ({
     set({ urls });
     get().update((draft) => {
       draft.settings.logoId = id;
+    }, "skip");
+  },
+
+  setSceneThumb: async (sceneId, file) => {
+    const project = get().project;
+    const scene = project?.scenes.find((item) => item.id === sceneId);
+    if (!project || !scene) return;
+    const urls = { ...get().urls };
+    if (!file) {
+      get().update((draft) => {
+        const target = draft.scenes.find((item) => item.id === sceneId);
+        if (target) target.thumbId = "";
+      }, "skip");
+      return;
+    }
+    const id = scene.thumbId || uid("thm");
+    await idb.putBlob(id, file);
+    if (urls[id]) URL.revokeObjectURL(urls[id]);
+    urls[id] = URL.createObjectURL(file);
+    set({ urls });
+    get().update((draft) => {
+      const target = draft.scenes.find((item) => item.id === sceneId);
+      if (target) target.thumbId = id;
     }, "skip");
   },
 
@@ -538,12 +576,18 @@ export const useTour = create<TourStore>((set, get) => ({
       const rest = await idb.allProjects();
       const used = new Set<string>();
       for (const item of rest) {
-        for (const scene of item.scenes) if (scene.imageId) used.add(scene.imageId);
+        for (const scene of item.scenes) {
+          if (scene.imageId) used.add(scene.imageId);
+          if (scene.thumbId) used.add(scene.thumbId);
+        }
         if (item.settings.logoId) used.add(item.settings.logoId);
         if (item.settings.audioId) used.add(item.settings.audioId);
       }
       const mine = new Set<string>();
-      for (const scene of doomed.scenes) if (scene.imageId) mine.add(scene.imageId);
+      for (const scene of doomed.scenes) {
+        if (scene.imageId) mine.add(scene.imageId);
+        if (scene.thumbId) mine.add(scene.thumbId);
+      }
       if (doomed.settings.logoId) mine.add(doomed.settings.logoId);
       if (doomed.settings.audioId) mine.add(doomed.settings.audioId);
       for (const blobId of mine) {
@@ -586,7 +630,10 @@ export const useTour = create<TourStore>((set, get) => ({
       if (blob) await idb.putBlob(nextId, blob);
       return nextId;
     };
-    for (const scene of copy.scenes) scene.imageId = await take(scene.imageId);
+    for (const scene of copy.scenes) {
+      scene.imageId = await take(scene.imageId);
+      scene.thumbId = await take(scene.thumbId);
+    }
     copy.settings.logoId = await take(copy.settings.logoId);
     copy.settings.audioId = await take(copy.settings.audioId);
     await idb.saveProject(copy);

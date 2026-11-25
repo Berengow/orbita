@@ -8,7 +8,10 @@ export async function exportProjectZip(project: Project): Promise<void> {
   const zip = new JSZip();
   zip.file("project.json", JSON.stringify(project));
   const ids = new Set<string>();
-  for (const scene of project.scenes) if (scene.imageId) ids.add(scene.imageId);
+  for (const scene of project.scenes) {
+    if (scene.imageId) ids.add(scene.imageId);
+    if (scene.thumbId) ids.add(scene.thumbId);
+  }
   if (project.settings.logoId) ids.add(project.settings.logoId);
   if (project.settings.audioId) ids.add(project.settings.audioId);
   for (const id of ids) {

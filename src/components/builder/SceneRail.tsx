@@ -2,6 +2,7 @@ import { Copy, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { plural } from "@/lib/tour/presets";
 import { useTour } from "@/lib/tour/store";
+import { ViewThumb } from "./ViewThumb";
 
 export function SceneRail({ onAdd }: { onAdd: () => void }) {
   const project = useTour((s) => s.project);
@@ -71,7 +72,15 @@ export function SceneRail({ onAdd }: { onAdd: () => void }) {
             >
               <button type="button" onClick={() => setActive(scene.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
                 <span className="pano-thumb size-12 shrink-0 rounded-lg">
-                  {src ? <img src={src} alt="" /> : null}
+                  {src || scene.thumbId ? (
+                    <ViewThumb
+                      src={scene.thumbId ? (urls[scene.thumbId] ?? "") : (src ?? "")}
+                      yaw={scene.yaw}
+                      pitch={scene.pitch}
+                      hfov={scene.hfov}
+                      custom={Boolean(scene.thumbId)}
+                    />
+                  ) : null}
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-sm">{scene.featured ? "★ " : ""}{scene.name}</span>

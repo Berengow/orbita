@@ -83,6 +83,8 @@ export interface Scene {
   featured: boolean;
   /** Empty inherits the tour hotspot color. */
   pointColor: string;
+  /** Optional carousel image. Empty uses a perspective frame of the start view. */
+  thumbId: string;
   hotspots: Hotspot[];
   modules: SceneModules;
 }
@@ -114,6 +116,8 @@ export interface Settings {
   minHfov: number;
   maxHfov: number;
   nav: NavStyle;
+  /** Remembered look id for each carousel type. */
+  navLooks: Partial<Record<NavStyle, string>>;
   transition: SceneTransition;
   thumbSize: number;
   hideBrand: boolean;
@@ -181,6 +185,7 @@ export interface PlayerScene {
   group: string;
   featured: boolean;
   pointColor: string;
+  thumb: string;
   modules: SceneModules;
   hotspots: PlayerHotspot[];
 }
@@ -200,6 +205,7 @@ export interface PlayerTour {
     minHfov: number;
     maxHfov: number;
     nav: NavStyle;
+    navLooks: Partial<Record<NavStyle, string>>;
     transition: SceneTransition;
     thumbSize: number;
     hideBrand: boolean;

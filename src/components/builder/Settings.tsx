@@ -3,14 +3,17 @@ import {
   FONTS,
   HOTSPOT_ICONS,
   MOTIONS,
+  NAV_LOOKS,
   NAV_STYLES,
   PRESETS,
   SURFACES,
   TRANSITIONS,
+  lookFor,
 } from "@/lib/tour/presets";
 import { useTour } from "@/lib/tour/store";
-import type { HotspotKind, SceneModules, Theme } from "@/lib/tour/types";
+import type { HotspotKind, NavStyle, SceneModules, Theme } from "@/lib/tour/types";
 import { Field, SliderRow, SwitchRow, fieldClass } from "./controls";
+import { ViewThumb } from "./ViewThumb";
 
 const KIND_LABEL: Record<HotspotKind, string> = {
   scene: "переход",
@@ -37,7 +40,7 @@ const MODULES: { key: keyof SceneModules; label: string }[] = [
   { key: "about", label: "Кнопка «об аудитории»" },
 ];
 
-type Tab = "scene" | "hotspot" | "tour" | "design" | "presets";
+type Tab = "scene" | "hotspot" | "tour" | "carousel" | "design" | "presets";
 
 export function Settings() {
   const project = useTour((s) => s.project);
@@ -45,6 +48,8 @@ export function Settings() {
   const update = useTour((s) => s.update);
   const applyPreset = useTour((s) => s.applyPreset);
   const setLogo = useTour((s) => s.setLogo);
+  const setSceneThumb = useTour((s) => s.setSceneThumb);
+  const urls = useTour((s) => s.urls);
   const setAudio = useTour((s) => s.setAudio);
   const removeHotspot = useTour((s) => s.removeHotspot);
   const replaceSceneImage = useTour((s) => s.replaceSceneImage);
@@ -66,6 +71,7 @@ export function Settings() {
     { id: "scene", label: "Сцена" },
     { id: "hotspot", label: "Точка", disabled: !hotspot },
     { id: "tour", label: "Тур" },
+    { id: "carousel", label: "Карусель" },
     { id: "design", label: "Дизайн" },
     { id: "presets", label: "Пресеты" },
   ];
@@ -279,28 +285,10 @@ export function Settings() {
                   {project.scenes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </select>
               </Field>
-              <Field label="Тип карусели">
-                <select className={fieldClass} value={settings.nav} onChange={(e) => update((d) => { d.settings.nav = e.target.value as typeof settings.nav; }, "skip")}>
-                  {NAV_STYLES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-                </select>
-              </Field>
-              <p className="mt-1 mb-2 text-2xs text-muted">{NAV_STYLES.find((n) => n.id === settings.nav)?.hint}</p>
-              <Field label="Переход между сценами">
-                <select className={fieldClass} value={settings.transition} onChange={(e) => update((d) => { d.settings.transition = e.target.value as typeof settings.transition; }, "skip")}>
-                  {TRANSITIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-                </select>
-              </Field>
-              <SliderRow label="Размер превью" value={settings.thumbSize} min={64} step={1} max={140} text={`${settings.thumbSize}px`} onChange={(v) => update((d) => { d.settings.thumbSize = v; }, "coalesce", "thumb")} />
+              <p className="mb-2 text-2xs text-muted">Тип, стиль и свои миниатюры — во вкладке «Карусель».</p>
             </Section>
 
             <Section title="Видимость и положение">
-              <Field label="Положение карусели">
-                <select className={fieldClass} value={settings.carouselPlacement} onChange={(e) => update((d) => { d.settings.carouselPlacement = e.target.value as typeof settings.carouselPlacement; }, "skip")}>
-                  <option value="bottom">Снизу</option>
-                  <option value="left">Слева</option>
-                  <option value="right">Справа</option>
-                </select>
-              </Field>
               <SwitchRow label="Скрыть бренд ORBITA" on={settings.hideBrand} onChange={(v) => update((d) => { d.settings.hideBrand = v; }, "skip")} />
             </Section>
 
@@ -373,6 +361,91 @@ export function Settings() {
                 </label>
                 {settings.audioId && <button type="button" className="ml-2 text-xs text-muted hover:text-fg" onClick={() => setAudio(null)}>Удалить</button>}
               </Field>
+            </Section>
+          </div>
+        )}
+
+        {tab === "carousel" && (
+          <div className="pt-4">
+            <Section title="Тип">
+              <div className="grid gap-1.5">
+                {NAV_STYLES.map((nav) => (
+                  <button
+                    key={nav.id}
+                    type="button"
+                    onClick={() => update((d) => { d.settings.nav = nav.id; }, "skip")}
+                    className={`rounded-lg border px-3 py-2 text-left ${settings.nav === nav.id ? "border-accent bg-accent/10" : "border-line hover:bg-surface-2"}`}
+                  >
+                    <span className="block text-sm font-medium">{nav.label}</span>
+                    <span className="mt-0.5 block text-2xs text-muted">{nav.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </Section>
+            <Section title={`Стиль · ${NAV_STYLES.find((item) => item.id === settings.nav)?.label}`}>
+              <p className="mb-2 text-2xs text-muted">Стиль запоминается отдельно для каждого типа.</p>
+              <div className="grid gap-1.5">
+                {NAV_LOOKS[settings.nav].map((look) => {
+                  const active = lookFor(settings.nav, settings.navLooks) === look.id;
+                  return (
+                    <button
+                      key={look.id}
+                      type="button"
+                      onClick={() => update((d) => {
+                        d.settings.navLooks = { ...d.settings.navLooks, [d.settings.nav]: look.id };
+                      }, "skip")}
+                      className={`rounded-lg border px-3 py-2 text-left ${active ? "border-accent bg-accent/10" : "border-line hover:bg-surface-2"}`}
+                    >
+                      <LookMark id={look.id} />
+                      <span className="mt-1.5 block text-sm font-medium">{look.label}</span>
+                      <span className="block text-2xs text-muted">{look.hint}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </Section>
+            <Section title="Размер и положение">
+              <Field label="Положение" hint="Для ленты, колонки и плавающей. Сетка и шторка открываются своей кнопкой.">
+                <select className={fieldClass} value={settings.carouselPlacement} onChange={(e) => update((d) => { d.settings.carouselPlacement = e.target.value as typeof settings.carouselPlacement; }, "skip")}>
+                  <option value="bottom">Снизу</option>
+                  <option value="left">Слева</option>
+                  <option value="right">Справа</option>
+                </select>
+              </Field>
+              <Field label="Переход между сценами">
+                <select className={fieldClass} value={settings.transition} onChange={(e) => update((d) => { d.settings.transition = e.target.value as typeof settings.transition; }, "skip")}>
+                  {TRANSITIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                </select>
+              </Field>
+              <SliderRow label="Размер превью" value={settings.thumbSize} min={64} step={1} max={140} text={`${settings.thumbSize}px`} onChange={(v) => update((d) => { d.settings.thumbSize = v; }, "coalesce", "thumb")} />
+            </Section>
+            <Section title="Миниатюры">
+              <p className="mb-2 text-2xs text-pretty text-muted">По умолчанию кадр стартового ракурса. Своя картинка заменяет его только в карусели.</p>
+              <div className="space-y-2">
+                {project.scenes.map((item) => {
+                  const custom = Boolean(item.thumbId && urls[item.thumbId]);
+                  const src = custom ? urls[item.thumbId] : urls[item.imageId];
+                  return (
+                    <div key={item.id} className="flex items-center gap-2">
+                      <span className="pano-thumb h-11 w-16 shrink-0 rounded-md">
+                        {src ? <ViewThumb src={src} yaw={item.yaw} pitch={item.pitch} hfov={item.hfov} custom={custom} /> : null}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-xs">{item.name}</span>
+                      <label className="inline-flex h-7 cursor-pointer items-center rounded-md border border-line px-2 text-2xs hover:bg-surface-2">
+                        Своя
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) void setSceneThumb(item.id, file);
+                          e.target.value = "";
+                        }} />
+                      </label>
+                      {item.thumbId ? (
+                        <button type="button" className="h-7 rounded-md px-1.5 text-2xs text-muted hover:text-fg" onClick={() => void setSceneThumb(item.id, null)}>Сброс</button>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
             </Section>
           </div>
         )}
@@ -473,6 +546,41 @@ export function Settings() {
         )}
       </div>
     </div>
+  );
+}
+
+function LookMark({ id }: { id: string }) {
+  if (id === "chips" || id === "bubbles") {
+    return (
+      <span className="flex gap-1">
+        <i className="size-4 rounded-full bg-fg/80" />
+        <i className="size-4 rounded-full bg-fg/40" />
+        <i className="size-4 rounded-full bg-fg/20" />
+      </span>
+    );
+  }
+  if (id === "polaroid") {
+    return (
+      <span className="flex gap-1">
+        <i className="h-5 w-4 rounded-sm bg-[#f6f1ea] shadow-sm" />
+        <i className="h-5 w-4 rounded-sm bg-[#f6f1ea]/70" />
+      </span>
+    );
+  }
+  if (id === "cinema" || id === "posters") {
+    return (
+      <span className="flex gap-1">
+        <i className="h-4 w-7 rounded-sm bg-fg/70" />
+        <i className="h-4 w-7 rounded-sm bg-fg/35" />
+      </span>
+    );
+  }
+  return (
+    <span className="flex gap-1">
+      <i className="h-4 w-6 rounded bg-fg/70" />
+      <i className="h-4 w-6 rounded bg-fg/40" />
+      <i className="h-4 w-6 rounded bg-fg/20" />
+    </span>
   );
 }
 

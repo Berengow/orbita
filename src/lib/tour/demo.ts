@@ -93,6 +93,7 @@ function makeScene(
     group: intro ? "Первый этаж" : name === "Атриум" ? "Свет" : "Первый этаж",
     featured: name === "Галерея",
     pointColor: "",
+    thumbId: "",
     hotspots: [],
     modules: defaultModules({ intro }),
   };

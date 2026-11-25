@@ -21,6 +21,7 @@ export function toPlayerTour(
       minHfov: s.minHfov,
       maxHfov: s.maxHfov,
       nav: s.nav,
+      navLooks: s.navLooks,
       transition: s.transition,
       thumbSize: s.thumbSize,
       hideBrand: s.hideBrand,
@@ -50,6 +51,7 @@ export function toPlayerTour(
       group: scene.group,
       featured: scene.featured,
       pointColor: scene.pointColor,
+      thumb: scene.thumbId ? (urls[scene.thumbId] ?? "") : "",
       modules: scene.modules,
       hotspots: scene.hotspots.map((h) => ({
         id: h.id,

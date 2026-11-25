@@ -79,6 +79,58 @@ export const NAV_STYLES: { id: NavStyle; label: string; hint: string }[] = [
   { id: "hotspots", label: "Только точки", hint: "Без карусели: переход по точкам и мини-карте" },
 ];
 
+export const NAV_LOOKS: Record<NavStyle, { id: string; label: string; hint: string }[]> = {
+  strip: [
+    { id: "glass", label: "Стекло", hint: "Матовая лента и мягкие карточки" },
+    { id: "cinema", label: "Кино", hint: "Широкие кадры без рамки" },
+    { id: "polaroid", label: "Полароид", hint: "Светлая рамка и подпись снизу" },
+    { id: "chips", label: "Кружки", hint: "Круглые кадры, имя по наведению" },
+  ],
+  side: [
+    { id: "stack", label: "Стопка", hint: "Крупные карточки колонкой" },
+    { id: "film", label: "Плёнка", hint: "Узкая вертикальная лента" },
+    { id: "quiet", label: "Тихо", hint: "Только кадр, имя появляется сверху" },
+  ],
+  float: [
+    { id: "dock", label: "Док", hint: "Стеклянная плашка, которую можно тащить" },
+    { id: "bubbles", label: "Пузыри", hint: "Круглые превью в компактной плашке" },
+  ],
+  grid: [
+    { id: "tiles", label: "Плитка", hint: "Ровная сетка карточек" },
+    { id: "posters", label: "Постеры", hint: "Кадры выше, ближе к обложке" },
+  ],
+  radial: [
+    { id: "orbit", label: "Орбита", hint: "Кольцо вокруг кнопки" },
+    { id: "tight", label: "Плотное", hint: "Кадры ближе к центру" },
+  ],
+  groups: [
+    { id: "rows", label: "Строки", hint: "Список с небольшим кадром" },
+    { id: "photos", label: "Фото", hint: "Крупнее превью в каждой строке" },
+  ],
+  search: [
+    { id: "rows", label: "Строки", hint: "Компактный список" },
+    { id: "photos", label: "Фото", hint: "Крупнее превью в результатах" },
+  ],
+  sheet: [
+    { id: "rows", label: "Строки", hint: "Телефонный список" },
+    { id: "photos", label: "Фото", hint: "Шторка с крупными кадрами" },
+  ],
+  minimal: [
+    { id: "plain", label: "Строка", hint: "Стрелки и номер" },
+    { id: "capsule", label: "Капсула", hint: "Номер в плотной плашке" },
+  ],
+  hotspots: [
+    { id: "plain", label: "Стрелки", hint: "Только переход между сценами" },
+  ],
+};
+
+export function lookFor(nav: NavStyle, looks: Partial<Record<NavStyle, string>> | undefined): string {
+  const list = NAV_LOOKS[nav];
+  const chosen = looks?.[nav];
+  if (chosen && list.some((item) => item.id === chosen)) return chosen;
+  return list[0].id;
+}
+
 export const TRANSITIONS: { id: SceneTransition; label: string }[] = [
   { id: "fade", label: "Проявление" },
   { id: "zoom", label: "Наезд" },
@@ -189,6 +241,7 @@ export function defaultSettings(): Settings {
     minHfov: 50,
     maxHfov: 120,
     nav: "strip",
+    navLooks: {},
     transition: "fade",
     thumbSize: 96,
     hideBrand: false,
@@ -254,6 +307,14 @@ export function normalizeProject(project: Project): Project {
 
   const settings = { ...defaultSettings(), ...(project.settings ?? {}) };
   if (!NAVS.has(settings.nav)) settings.nav = "strip";
+  const looks: Partial<Record<NavStyle, string>> = {};
+  const rawLooks = settings.navLooks ?? {};
+  (Object.keys(rawLooks) as NavStyle[]).forEach((key) => {
+    if (!NAVS.has(key)) return;
+    const value = rawLooks[key];
+    if (value && NAV_LOOKS[key].some((item) => item.id === value)) looks[key] = value;
+  });
+  settings.navLooks = looks;
   if (settings.transition !== "fade" && settings.transition !== "zoom" && settings.transition !== "none") {
     settings.transition = "fade";
   }
@@ -298,6 +359,7 @@ function normalizeScene(scene: Scene): Scene {
     group: String(scene.group || ""),
     featured: Boolean(scene.featured),
     pointColor: hex(scene.pointColor),
+    thumbId: String(scene.thumbId || ""),
     modules: { ...defaultModules(), ...(scene.modules ?? {}) },
     hotspots: (scene.hotspots ?? []).map((hotspot) => normalizeHotspot(hotspot)),
   };

@@ -181,6 +181,14 @@ export async function exportSiteZip(project: Project, quality: ExportQuality): P
     const path = `panoramas/${safeId(scene.id)}.${ext}`;
     zip.file(path, image);
     urls[scene.imageId] = path;
+    if (scene.thumbId) {
+      const thumb = await idb.getBlob(scene.thumbId);
+      if (thumb) {
+        const thumbPath = `media/thumb-${safeId(scene.id)}.${extOf(thumb, "jpg")}`;
+        zip.file(thumbPath, thumb);
+        urls[scene.thumbId] = thumbPath;
+      }
+    }
   }
 
   if (project.settings.logoId) {
