@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>ORBITA</title>
+  <script>
+    (function () {
+      var path = location.pathname;
+      var cut = path.replace(/\/+$/, "").replace(/\/[^/]*$/, "");
+      var next = (cut || "") + "/";
+      if (next !== path) location.replace(next);
+    })();
+  </script>
+</head>
+<body>
+  <p><a href="./">Открыть тур</a></p>
+</body>
+</html>

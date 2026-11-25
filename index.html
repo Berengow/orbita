@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Демо-тур</title>
+  <meta name="description" content="Виртуальный тур «Демо-тур», собранный в ORBITA." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="vendor/pannellum/pannellum.css" />
+  <link rel="stylesheet" href="player/fonts.css" />
+  <link rel="stylesheet" href="player/player.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    window.ORBITA_STANDALONE = true;
+    (function () {
+      var href = location.href.split("#")[0].split("?")[0];
+      if (!/\/[^/]+\.[a-z0-9]+$/i.test(location.pathname) && href.slice(-1) !== "/") href += "/";
+      window.ORBITA_BASE = new URL(".", href).href;
+    })();
+    window.TOUR = {"title":"Демо-тур","mode":"play","activeSceneId":"scn_gallery","placeKind":null,"selectedHotspotId":null,"theme":{"preset":"coal","accent":"#e29a3a","panel":"#161311","text":"#f6f1ea","point":"#e29a3a","font":"Manrope","radius":16,"opacity":0.78,"blur":18,"pointScale":1,"pointShape":"diamond","uiScale":1},"settings":{"soundEnabled":false,"autorotate":false,"autorotateSpeed":-1.6,"gyro":false,"minHfov":50,"maxHfov":120,"carouselPlacement":"bottom","logoPlacement":"top-left","logoText":"ORBITA","aboutTitle":"Как смотреть","aboutBody":"Крутите зал мышью или пальцем. Точки ведут между сценами. Стрелки и карусель переключают залы сразу, без новой страницы.","introTitle":"Демо-тур ORBITA","introSubtitle":"Три зала, точки перехода и карточка. Сайт открывается с GitHub Pages без сервера.","introButton":"Начать просмотр","northOffset":0},"scenes":[{"id":"scn_hall","name":"Зал","description":"Первый зал. Отсюда тур уходит в галерею и атриум — страница не перезагружается.","image":"panoramas/hall.jpg","yaw":-16,"pitch":0,"hfov":100,"mapX":28,"mapY":64,"modules":{"carousel":true,"logo":true,"about":false,"hotspots":true,"labels":true,"minimap":false,"infoCard":true,"compass":false,"sceneTitle":true,"arrows":true,"fullscreen":true,"loader":true,"intro":true},"hotspots":[{"id":"hs_hall_gallery","kind":"scene","yaw":-16,"pitch":2,"title":"В галерею","text":"","targetSceneId":"scn_gallery","url":""},{"id":"hs_hall_atrium","kind":"scene","yaw":48,"pitch":0,"title":"В атриум","text":"","targetSceneId":"scn_atrium","url":""}]},{"id":"scn_gallery","name":"Галерея","description":"Вторая сцена. Карусель и стрелки переключают залы без перезагрузки.","image":"panoramas/gallery.jpg","yaw":-34,"pitch":0,"hfov":100,"mapX":52,"mapY":36,"modules":{"carousel":true,"logo":true,"about":false,"hotspots":true,"labels":true,"minimap":false,"infoCard":true,"compass":false,"sceneTitle":true,"arrows":true,"fullscreen":true,"loader":true,"intro":false},"hotspots":[{"id":"hs_gallery_hall","kind":"scene","yaw":-34,"pitch":2,"title":"Обратно в зал","text":"","targetSceneId":"scn_hall","url":""},{"id":"hs_gallery_frame","kind":"info","yaw":22,"pitch":0,"title":"О раме","text":"Цветные порталы — это точки перехода. В своём туре на их место встанут дверные проёмы и экспонаты.","targetSceneId":"","url":""}]},{"id":"scn_atrium","name":"Атриум","description":"Свет сверху. Точки на панораме ведут обратно и открывают заметки.","image":"panoramas/atrium.jpg","yaw":6,"pitch":0,"hfov":100,"mapX":74,"mapY":68,"modules":{"carousel":true,"logo":true,"about":false,"hotspots":true,"labels":true,"minimap":false,"infoCard":true,"compass":false,"sceneTitle":true,"arrows":true,"fullscreen":true,"loader":true,"intro":false},"hotspots":[{"id":"hs_atrium_gallery","kind":"scene","yaw":6,"pitch":2,"title":"В галерею","text":"","targetSceneId":"scn_gallery","url":""},{"id":"hs_atrium_oculus","kind":"info","yaw":-72,"pitch":-2,"title":"Окулус","text":"Поднимите взгляд: кольцо на потолке — зенит. Так выглядит отметка с текстом.","targetSceneId":"","url":""}]}],"logoUrl":"","audioUrl":""};
+  </script>
+  <script src="vendor/pannellum/pannellum.js"></script>
+  <script src="player/player.js"></script>
+</body>
+</html>
