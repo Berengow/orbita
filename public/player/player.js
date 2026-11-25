@@ -123,7 +123,10 @@
     root.style.setProperty("--orb-font", `"${theme.font}", "Manrope", sans-serif`);
     root.style.setProperty("--orb-shadow", (theme.shadow != null ? theme.shadow : 22) + "px");
     root.style.setProperty("--orb-gap", (theme.gap != null ? theme.gap : 8) + "px");
-    root.style.setProperty("--orb-thumb", (tour.settings.thumbSize || 96) + "px");
+    const density = (tour.settings && tour.settings.navDensity) || "regular";
+    const thumb = tour.settings.thumbSize || 96;
+    const thumbScale = density === "compact" ? 0.82 : density === "comfy" ? 1.22 : 1;
+    root.style.setProperty("--orb-thumb", Math.round(thumb * thumbScale) + "px");
     const scene = active();
     const point = (scene && scene.pointColor) || theme.point;
     root.style.setProperty("--orb-point", point);
@@ -1066,7 +1069,6 @@
     text.append(el("small", "orb-row-note", item.description || ""));
     text.append(el("small", "orb-row-group", item.group || ""));
     button.append(text);
-    button.addEventListener("mousedown", (event) => event.preventDefault());
     button.addEventListener("click", () => goScene(item.id));
     return button;
   }
@@ -1262,7 +1264,7 @@
       if (!drag || drag.id !== event.pointerId) return;
       const dx = event.clientX - drag.x;
       const dy = event.clientY - drag.y;
-      if (!drag.moved && dx * dx + dy * dy < 36) return;
+      if (!drag.moved && dx * dx + dy * dy < 100) return;
       if (!drag.moved) {
         drag.moved = true;
         if (scroller.setPointerCapture) scroller.setPointerCapture(event.pointerId);
