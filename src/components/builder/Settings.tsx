@@ -409,6 +409,7 @@ export function Settings() {
               <SwitchRow label="Строка поиска" hint="В типе «Поиск» поле есть всегда. Включите, чтобы оно появилось и в остальных." on={settings.navFilter} onChange={(v) => update((d) => { d.settings.navFilter = v; }, "skip")} />
               <Field label="Текст карточки">
                 <select className={fieldClass} value={settings.navDetail} onChange={(e) => update((d) => { d.settings.navDetail = e.target.value as typeof settings.navDetail; }, "skip")}>
+                  <option value="none">Без текста</option>
                   <option value="name">Только имя</option>
                   <option value="note">Имя и описание</option>
                   <option value="full">Имя, описание и группа</option>
@@ -431,6 +432,20 @@ export function Settings() {
               <SliderRow label="Ширина карточки" value={settings.navCardWidth} min={160} step={2} max={340} text={`${settings.navCardWidth}px`} onChange={(v) => update((d) => { d.settings.navCardWidth = v; }, "coalesce", "cardw")} />
               <SliderRow label="Отступ" value={settings.navGap} min={2} step={1} max={24} text={`${settings.navGap}px`} onChange={(v) => update((d) => { d.settings.navGap = v; }, "coalesce", "cardgap")} />
               <SwitchRow label="Номер сцены" hint="Маленькая цифра порядка перед названием." on={settings.navIndex} onChange={(v) => update((d) => { d.settings.navIndex = v; }, "skip")} />
+              <SliderRow label="Размер текста" value={settings.navTextSize} min={10} step={1} max={22} text={`${settings.navTextSize}px`} onChange={(v) => update((d) => { d.settings.navTextSize = v; }, "coalesce", "cardtext")} />
+              <SliderRow label="Скругление карточки" value={settings.navRadius} min={0} step={1} max={28} text={`${settings.navRadius}px`} onChange={(v) => update((d) => { d.settings.navRadius = v; }, "coalesce", "cardr")} />
+              <Field label="Цвет текста" hint="Пустое значение — цвет темы.">
+                <div className="flex items-center gap-2">
+                  <input type="color" className="h-9 w-12 cursor-pointer rounded-md border border-line bg-transparent" value={settings.navTextColor || "#ffffff"} onChange={(e) => update((d) => { d.settings.navTextColor = e.target.value; }, "skip")} />
+                  <button type="button" className="h-8 rounded-md border border-line px-2 text-2xs hover:bg-surface-2" onClick={() => update((d) => { d.settings.navTextColor = ""; }, "skip")}>Как в теме</button>
+                </div>
+              </Field>
+            </Section>
+            <Section title="Поведение">
+              <SwitchRow label="Плавная прокрутка" hint="Лента едет плавно. Выключите, если нужен мгновенный сдвиг." on={settings.navSmooth} onChange={(v) => update((d) => { d.settings.navSmooth = v; }, "skip")} />
+              <SwitchRow label="Стрелки перехода" hint="Кнопки предыдущей и следующей панорамы." on={settings.navArrows} onChange={(v) => update((d) => { d.settings.navArrows = v; }, "skip")} />
+              <SwitchRow label="Стрелки прокрутки" hint="Маленькие стрелки по краям ленты." on={settings.navNudge} onChange={(v) => update((d) => { d.settings.navNudge = v; }, "skip")} />
+              <SwitchRow label="Затемнение краёв" hint="Подсказка, что ленту можно листать дальше." on={settings.navFade} onChange={(v) => update((d) => { d.settings.navFade = v; }, "skip")} />
             </Section>
             <Section title="Размер и положение">
               <Field label="Положение" hint="Для ленты, колонки и плавающей. Сетка и шторка открываются своей кнопкой.">
@@ -458,7 +473,18 @@ export function Settings() {
                       <span className="pano-thumb h-11 w-16 shrink-0 rounded-md">
                         {src ? <ViewThumb src={src} yaw={item.yaw} pitch={item.pitch} hfov={item.hfov} custom={custom} /> : null}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-xs">{item.name}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-xs">{item.name}</span>
+                        <input
+                          className={`${fieldClass} mt-1 h-7 text-2xs`}
+                          value={item.caption}
+                          placeholder="Своя подпись"
+                          onChange={(e) => update((d) => {
+                            const scene = d.scenes.find((entry) => entry.id === item.id);
+                            if (scene) scene.caption = e.target.value;
+                          }, "coalesce", "caption-" + item.id)}
+                        />
+                      </span>
                       <label className="inline-flex h-7 cursor-pointer items-center rounded-md border border-line px-2 text-2xs hover:bg-surface-2">
                         Своя
                         <input type="file" accept="image/*" className="hidden" onChange={(e) => {

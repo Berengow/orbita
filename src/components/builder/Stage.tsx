@@ -78,7 +78,7 @@ export function Stage() {
         placeKind: state.placeKind,
         selectedHotspotId: state.selectedHotspotId,
       });
-      const key = JSON.stringify(tour);
+      const key = JSON.stringify({ ...tour, activeSceneId: "" });
       if (key === last) return;
       last = key;
       iframeRef.current?.contentWindow?.postMessage(

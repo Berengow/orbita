@@ -31,7 +31,7 @@ export type NavStyle =
   | "minimal"
   | "sheet"
   | "hotspots";
-export type NavDetail = "name" | "note" | "full";
+export type NavDetail = "none" | "name" | "note" | "full";
 export type NavDensity = "compact" | "regular" | "comfy";
 export type NavImage = "rounded" | "square" | "circle";
 export type SceneTransition = "fade" | "zoom" | "none";
@@ -88,6 +88,8 @@ export interface Scene {
   pointColor: string;
   /** Optional carousel image. Empty uses a perspective frame of the start view. */
   thumbId: string;
+  /** Carousel label. Empty uses the scene name. */
+  caption: string;
   hotspots: Hotspot[];
   modules: SceneModules;
 }
@@ -130,6 +132,13 @@ export interface Settings {
   navGap: number;
   navImage: NavImage;
   navIndex: boolean;
+  navSmooth: boolean;
+  navArrows: boolean;
+  navNudge: boolean;
+  navFade: boolean;
+  navTextSize: number;
+  navTextColor: string;
+  navRadius: number;
   transition: SceneTransition;
   thumbSize: number;
   hideBrand: boolean;
@@ -198,6 +207,7 @@ export interface PlayerScene {
   featured: boolean;
   pointColor: string;
   thumb: string;
+  caption: string;
   modules: SceneModules;
   hotspots: PlayerHotspot[];
 }
@@ -225,6 +235,13 @@ export interface PlayerTour {
     navGap: number;
     navImage: NavImage;
     navIndex: boolean;
+    navSmooth: boolean;
+    navArrows: boolean;
+    navNudge: boolean;
+    navFade: boolean;
+    navTextSize: number;
+    navTextColor: string;
+    navRadius: number;
     transition: SceneTransition;
     thumbSize: number;
     hideBrand: boolean;

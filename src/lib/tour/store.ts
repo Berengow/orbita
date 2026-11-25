@@ -136,6 +136,7 @@ function blankScene(name: string, imageId: string, index: number): Scene {
     featured: false,
     pointColor: "",
     thumbId: "",
+    caption: "",
     hotspots: [],
     modules: defaultModules(),
   };

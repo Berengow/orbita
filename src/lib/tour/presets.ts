@@ -249,6 +249,13 @@ export function defaultSettings(): Settings {
     navGap: 8,
     navImage: "rounded",
     navIndex: false,
+    navSmooth: true,
+    navArrows: true,
+    navNudge: true,
+    navFade: true,
+    navTextSize: 13,
+    navTextColor: "",
+    navRadius: 12,
     transition: "fade",
     thumbSize: 96,
     hideBrand: false,
@@ -323,7 +330,7 @@ export function normalizeProject(project: Project): Project {
   });
   settings.navLooks = looks;
   settings.navFilter = Boolean(settings.navFilter);
-  if (settings.navDetail !== "name" && settings.navDetail !== "note" && settings.navDetail !== "full") {
+  if (settings.navDetail !== "none" && settings.navDetail !== "name" && settings.navDetail !== "note" && settings.navDetail !== "full") {
     settings.navDetail = "note";
   }
   if (settings.navDensity !== "compact" && settings.navDensity !== "regular" && settings.navDensity !== "comfy") {
@@ -335,6 +342,17 @@ export function normalizeProject(project: Project): Project {
     settings.navImage = "rounded";
   }
   settings.navIndex = Boolean(settings.navIndex);
+  if (settings.navSmooth == null) settings.navSmooth = true;
+  if (settings.navArrows == null) settings.navArrows = true;
+  if (settings.navNudge == null) settings.navNudge = true;
+  if (settings.navFade == null) settings.navFade = true;
+  settings.navSmooth = Boolean(settings.navSmooth);
+  settings.navArrows = Boolean(settings.navArrows);
+  settings.navNudge = Boolean(settings.navNudge);
+  settings.navFade = Boolean(settings.navFade);
+  settings.navTextSize = num(settings.navTextSize, 13, 10, 22);
+  settings.navTextColor = hex(settings.navTextColor);
+  settings.navRadius = num(settings.navRadius, 12, 0, 28);
   if (settings.transition !== "fade" && settings.transition !== "zoom" && settings.transition !== "none") {
     settings.transition = "fade";
   }
@@ -380,6 +398,7 @@ function normalizeScene(scene: Scene): Scene {
     featured: Boolean(scene.featured),
     pointColor: hex(scene.pointColor),
     thumbId: String(scene.thumbId || ""),
+    caption: String(scene.caption || ""),
     modules: { ...defaultModules(), ...(scene.modules ?? {}) },
     hotspots: (scene.hotspots ?? []).map((hotspot) => normalizeHotspot(hotspot)),
   };

@@ -94,6 +94,7 @@ function makeScene(
     featured: name === "Галерея",
     pointColor: "",
     thumbId: "",
+    caption: "",
     hotspots: [],
     modules: defaultModules({ intro }),
   };
