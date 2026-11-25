@@ -1062,7 +1062,19 @@ html[data-nav="float"] .orb-rail { max-width: min(56vw, 520px); }
   object-fit: cover;
   object-position: center 40%;
 }
-.orb-thumbs { cursor: grab; }
+.orb-thumb img,
+.orb-row img,
+.orb-radial-item img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.orb-thumbs, .orb-list, .orb-grid { user-select: none; }
+.orb-thumbs.is-grabbing, .orb-list.is-grabbing, .orb-grid.is-grabbing { cursor: grabbing; }
+.orb-row, .orb-thumb { cursor: pointer; }
+.orb-row.is-active, .orb-thumb.is-active {
+  background: color-mix(in srgb, var(--orb-accent) 22%, transparent);
+}
 .orb-thumbs.is-grabbing { cursor: grabbing; user-select: none; }
 .orb-thumbs.is-grabbing .orb-thumb { pointer-events: none; }
 .orb-thumb {

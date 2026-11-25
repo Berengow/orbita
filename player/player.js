@@ -1021,6 +1021,8 @@
     if (item.image || item.thumb) {
       const img = document.createElement("img");
       img.alt = "";
+      img.draggable = false;
+      img.addEventListener("dragstart", (event) => event.preventDefault());
       paintThumb(img, item);
       button.append(img);
     }
@@ -1036,6 +1038,8 @@
     if (item.image || item.thumb) {
       const img = document.createElement("img");
       img.alt = "";
+      img.draggable = false;
+      img.addEventListener("dragstart", (event) => event.preventDefault());
       paintThumb(img, item);
       button.append(img);
     }
@@ -1149,6 +1153,7 @@
     }
     uiEl.append(panel);
     if (nav === "search") filterList(panel);
+    bindDragScroll(panel, true);
   }
 
   function renderNav(scene, mod) {
@@ -1201,6 +1206,54 @@
     revealActiveThumb();
   }
 
+  function bindDragScroll(scroller, vertical) {
+    let drag = null;
+    let eatClick = false;
+    const isVert = () => (typeof vertical === "function" ? vertical() : Boolean(vertical));
+    scroller.addEventListener("dragstart", (event) => event.preventDefault());
+    scroller.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      if (event.target.closest && event.target.closest("input, textarea, .orb-nudge, a")) return;
+      eatClick = false;
+      drag = {
+        id: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        left: scroller.scrollLeft,
+        top: scroller.scrollTop,
+        moved: false,
+      };
+    });
+    scroller.addEventListener("pointermove", (event) => {
+      if (!drag || drag.id !== event.pointerId) return;
+      const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
+      if (!drag.moved && dx * dx + dy * dy < 36) return;
+      if (!drag.moved) {
+        drag.moved = true;
+        if (scroller.setPointerCapture) scroller.setPointerCapture(event.pointerId);
+      }
+      scroller.classList.add("is-grabbing");
+      if (isVert()) scroller.scrollTop = drag.top - dy;
+      else scroller.scrollLeft = drag.left - dx;
+      event.preventDefault();
+    });
+    const end = (event) => {
+      if (!drag || (event && drag.id !== event.pointerId)) return;
+      if (drag.moved) eatClick = true;
+      drag = null;
+      scroller.classList.remove("is-grabbing");
+    };
+    scroller.addEventListener("pointerup", end);
+    scroller.addEventListener("pointercancel", end);
+    scroller.addEventListener("click", (event) => {
+      if (!eatClick) return;
+      eatClick = false;
+      event.preventDefault();
+      event.stopPropagation();
+    }, true);
+  }
+
   function railVertical() {
     const side = document.documentElement.dataset.carousel;
     const nav = document.documentElement.dataset.nav;
@@ -1238,45 +1291,7 @@
     };
     thumbs._orbSync = sync;
     thumbs.addEventListener("scroll", sync, { passive: true });
-    let drag = null;
-    let suppressClick = false;
-    thumbs.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0 || (event.target.closest && event.target.closest(".orb-nudge"))) return;
-      drag = {
-        id: event.pointerId,
-        x: event.clientX,
-        y: event.clientY,
-        left: thumbs.scrollLeft,
-        top: thumbs.scrollTop,
-        moved: false,
-      };
-      thumbs.setPointerCapture(event.pointerId);
-    });
-    thumbs.addEventListener("pointermove", (event) => {
-      if (!drag || drag.id !== event.pointerId) return;
-      const dx = event.clientX - drag.x;
-      const dy = event.clientY - drag.y;
-      if (dx * dx + dy * dy > 16) drag.moved = true;
-      if (!drag.moved) return;
-      thumbs.classList.add("is-grabbing");
-      if (railVertical()) thumbs.scrollTop = drag.top - dy;
-      else thumbs.scrollLeft = drag.left - dx;
-      event.preventDefault();
-    });
-    const endDrag = (event) => {
-      if (!drag || (event && drag.id !== event.pointerId)) return;
-      if (drag.moved) suppressClick = true;
-      drag = null;
-      thumbs.classList.remove("is-grabbing");
-    };
-    thumbs.addEventListener("pointerup", endDrag);
-    thumbs.addEventListener("pointercancel", endDrag);
-    thumbs.addEventListener("click", (event) => {
-      if (!suppressClick) return;
-      suppressClick = false;
-      event.preventDefault();
-      event.stopPropagation();
-    }, true);
+    bindDragScroll(thumbs, railVertical);
     thumbs.addEventListener("wheel", (event) => {
       const vertical = railVertical();
       const max = vertical ? thumbs.scrollHeight - thumbs.clientHeight : thumbs.scrollWidth - thumbs.clientWidth;
