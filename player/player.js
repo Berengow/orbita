@@ -106,6 +106,11 @@
     return luminance(hex) > 0.62 ? "#1a140e" : "#fffaf3";
   }
 
+  function paintColor(root, name, value) {
+    if (value) root.style.setProperty(name, value);
+    else root.style.removeProperty(name);
+  }
+
   function applyTheme() {
     const theme = tour.theme;
     const root = document.documentElement;
@@ -148,6 +153,18 @@
     if (tour.settings && tour.settings.navTextColor) root.style.setProperty("--orb-card-ink", tour.settings.navTextColor);
     else root.style.removeProperty("--orb-card-ink");
     root.style.setProperty("--orb-card-radius", ((tour.settings && tour.settings.navRadius) != null ? tour.settings.navRadius : 12) + "px");
+    root.style.setProperty("--orb-rail", ((tour.settings && tour.settings.navRail) || 720) + "px");
+    root.style.setProperty("--orb-nav-opacity", String((tour.settings && tour.settings.navOpacity) != null ? tour.settings.navOpacity : 1));
+    root.style.setProperty("--orb-logo-scale", String((tour.settings && tour.settings.logoScale) || 1));
+    root.style.setProperty("--orb-title-scale", String((tour.settings && tour.settings.titleScale) || 1));
+    root.style.setProperty("--orb-point-border", ((theme.pointBorder) || 0) + "px");
+    root.style.setProperty("--orb-label-scale", String(theme.labelScale || 1));
+    paintColor(root, "--orb-nav-bg", tour.settings && tour.settings.navBg);
+    paintColor(root, "--orb-nav-line", tour.settings && tour.settings.navBorder);
+    paintColor(root, "--orb-nav-active", tour.settings && tour.settings.navActive);
+    root.dataset.navbg = tour.settings && tour.settings.navBg ? "on" : "off";
+    root.dataset.navline = tour.settings && tour.settings.navBorder ? "on" : "off";
+    root.dataset.navactive = tour.settings && tour.settings.navActive ? "on" : "off";
     root.dataset.carousel = carouselSide();
     root.dataset.logo = tour.settings.logoPlacement;
     root.dataset.brand = tour.settings.hideBrand ? "off" : "on";
@@ -273,7 +290,21 @@
       motion: resolvedMotion(hotspot),
       showLabel: Boolean(scene.modules.labels && hotspot.title),
       selected: tour.selectedHotspotId === hotspot.id,
+      color: hotspot.color || "",
+      scale: hotspot.scale || 1,
     };
+  }
+
+  function paintMark(button, args) {
+    const scale = args.scale || 1;
+    button.style.transform = "translate(-50%, -50%) scale(" + scale + ")";
+    if (args.color) {
+      button.style.setProperty("--orb-point", args.color);
+      button.style.setProperty("--orb-point-ink", ink(args.color));
+    } else {
+      button.style.removeProperty("--orb-point");
+      button.style.removeProperty("--orb-point-ink");
+    }
   }
 
   function renderMark(div, args) {
@@ -284,6 +315,7 @@
     button.dataset.icon = args.icon || "";
     button.setAttribute("aria-label", args.title || "Точка");
     button.innerHTML = GLYPH[args.icon] || GLYPH.arrow;
+    paintMark(button, args);
     const label = document.createElement("span");
     label.className = "orb-label";
     label.textContent = args.title || "";
@@ -317,6 +349,7 @@
     }
     label.textContent = args.title || "";
     label.hidden = !args.showLabel;
+    paintMark(button, args);
   }
 
   function syncHotspots() {
