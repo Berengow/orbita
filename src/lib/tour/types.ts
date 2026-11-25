@@ -1,5 +1,37 @@
-export type HotspotKind = "scene" | "info" | "link";
+export type HotspotKind = "scene" | "info" | "link" | "image" | "video" | "audio";
+export type HotspotIcon =
+  | "auto"
+  | "arrow"
+  | "info"
+  | "link"
+  | "image"
+  | "video"
+  | "audio"
+  | "pin"
+  | "star"
+  | "door"
+  | "camera"
+  | "play"
+  | "map"
+  | "doc"
+  | "heart"
+  | "compass"
+  | "eye";
+export type HotspotMotion = "none" | "pulse" | "bounce" | "glow" | "rotate";
+export type HotspotSurface = "modal" | "panel" | "tooltip" | "direct";
 export type PointShape = "circle" | "diamond" | "square";
+export type NavStyle =
+  | "strip"
+  | "side"
+  | "float"
+  | "grid"
+  | "radial"
+  | "groups"
+  | "search"
+  | "minimal"
+  | "sheet"
+  | "hotspots";
+export type SceneTransition = "fade" | "zoom" | "none";
 export type CarouselPlacement = "bottom" | "left" | "right";
 export type LogoPlacement = "top-left" | "top-center" | "top-right";
 export type ExportQuality = "compact" | "balanced" | "high" | "original";
@@ -13,6 +45,10 @@ export interface Hotspot {
   text: string;
   targetSceneId: string;
   url: string;
+  icon: HotspotIcon;
+  /** "theme" follows the tour-wide motion. */
+  motion: HotspotMotion | "theme";
+  surface: HotspotSurface;
 }
 
 export interface SceneModules {
@@ -41,6 +77,10 @@ export interface Scene {
   hfov: number;
   mapX: number;
   mapY: number;
+  group: string;
+  featured: boolean;
+  /** Empty inherits the tour hotspot color. */
+  pointColor: string;
   hotspots: Hotspot[];
   modules: SceneModules;
 }
@@ -58,6 +98,10 @@ export interface Theme {
   pointScale: number;
   pointShape: PointShape;
   uiScale: number;
+  shadow: number;
+  gap: number;
+  hotspotMotion: HotspotMotion;
+  customCss: string;
 }
 
 export interface Settings {
@@ -67,6 +111,13 @@ export interface Settings {
   gyro: boolean;
   minHfov: number;
   maxHfov: number;
+  nav: NavStyle;
+  transition: SceneTransition;
+  thumbSize: number;
+  hideBrand: boolean;
+  guide: boolean;
+  guideSeconds: number;
+  deepLink: boolean;
   carouselPlacement: CarouselPlacement;
   logoPlacement: LogoPlacement;
   logoText: string;
@@ -108,6 +159,9 @@ export interface PlayerHotspot {
   text: string;
   targetSceneId: string;
   url: string;
+  icon: HotspotIcon;
+  motion: HotspotMotion | "theme";
+  surface: HotspotSurface;
 }
 
 export interface PlayerScene {
@@ -120,6 +174,9 @@ export interface PlayerScene {
   hfov: number;
   mapX: number;
   mapY: number;
+  group: string;
+  featured: boolean;
+  pointColor: string;
   modules: SceneModules;
   hotspots: PlayerHotspot[];
 }
@@ -138,6 +195,13 @@ export interface PlayerTour {
     gyro: boolean;
     minHfov: number;
     maxHfov: number;
+    nav: NavStyle;
+    transition: SceneTransition;
+    thumbSize: number;
+    hideBrand: boolean;
+    guide: boolean;
+    guideSeconds: number;
+    deepLink: boolean;
     carouselPlacement: CarouselPlacement;
     logoPlacement: LogoPlacement;
     logoText: string;

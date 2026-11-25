@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import { createDemoBundle } from "./demo";
 import * as idb from "./idb";
-import { PRESETS, defaultModules, defaultSettings, defaultTheme, sceneTitleFromFile, uid } from "./presets";
-import type { ExportQuality, Hotspot, HotspotKind, Project, ProjectSummary, Scene } from "./types";
+import { PRESETS, blankHotspot, defaultModules, defaultSettings, defaultTheme, normalizeProject, sceneTitleFromFile, uid } from "./presets";
+import type { ExportQuality, HotspotKind, Project, ProjectSummary, Scene } from "./types";
 
 export type DialogId = null | "new" | "export" | "help" | "projects";
 export type Hist = "push" | "coalesce" | "skip";
@@ -128,6 +128,9 @@ function blankScene(name: string, imageId: string, index: number): Scene {
     hfov: 100,
     mapX: 18 + (index % 5) * 16,
     mapY: 30 + (index % 3) * 18,
+    group: "",
+    featured: false,
+    pointColor: "",
     hotspots: [],
     modules: defaultModules(),
   };
@@ -182,8 +185,9 @@ export const useTour = create<TourStore>((set, get) => ({
         meta = { lastId: demo.project.id };
       }
       const id = projects.some((item) => item.id === meta.lastId) ? meta.lastId : projects[0].id;
-      const project = await idb.getProject(id);
-      if (!project) throw new Error("Проект не найден");
+      const raw = await idb.getProject(id);
+      if (!raw) throw new Error("Проект не найден");
+      const project = normalizeProject(raw);
       const urls = await hydrate(project);
       set({ booted: true, projects, project, urls, bootError: "" });
     } catch (error) {
@@ -197,6 +201,7 @@ export const useTour = create<TourStore>((set, get) => ({
     if (!current) return;
     const next = structuredClone(current);
     recipe(next);
+    normalizeProject(next);
     next.updatedAt = Date.now();
     const now = Date.now();
     const sameGesture = hist === "coalesce" && key && coalesce.key === key && now - coalesce.at < 700;
@@ -310,16 +315,15 @@ export const useTour = create<TourStore>((set, get) => ({
     if (!scene) return;
     const target = nextSceneId(project, scene.id);
     const targetName = project.scenes.find((item) => item.id === target)?.name ?? "Переход";
-    const hotspot: Hotspot = {
+    const hotspot = blankHotspot({
       id: uid("hs"),
       kind,
       yaw,
       pitch,
-      title: kind === "scene" ? targetName : kind === "info" ? "Заметка" : "Ссылка",
-      text: "",
+      title:
+        kind === "scene" ? targetName : kind === "info" ? "Заметка" : kind === "image" ? "Кадр" : kind === "video" ? "Видео" : kind === "audio" ? "Звук" : "Ссылка",
       targetSceneId: kind === "scene" ? target : "",
-      url: "",
-    };
+    });
     get().update((draft) => {
       const current = draft.scenes.find((item) => item.id === draft.activeSceneId);
       current?.hotspots.push(hotspot);
@@ -509,8 +513,9 @@ export const useTour = create<TourStore>((set, get) => ({
   },
 
   openProject: async (id) => {
-    const project = await idb.getProject(id);
-    if (!project) return;
+    const raw = await idb.getProject(id);
+    if (!raw) return;
+    const project = normalizeProject(raw);
     revokeUrls(get().urls);
     const urls = await hydrate(project);
     await idb.setMeta({ lastId: id });
@@ -618,7 +623,7 @@ export const useTour = create<TourStore>((set, get) => ({
     set({ busy: "Открываем проект…" });
     try {
       const { importProjectZip } = await import("./export-project");
-      const project = await importProjectZip(file);
+      const project = normalizeProject(await importProjectZip(file));
       revokeUrls(get().urls);
       const urls = await hydrate(project);
       await idb.setMeta({ lastId: project.id });

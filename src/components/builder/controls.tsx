@@ -105,11 +105,12 @@ export function SliderRow({
   );
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <label className="block py-1">
       <span className="mb-1 block text-2xs text-muted">{label}</span>
       {children}
+      {hint ? <span className="mt-1 block text-2xs text-pretty text-faint">{hint}</span> : null}
     </label>
   );
 }

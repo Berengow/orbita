@@ -1,8 +1,17 @@
 import type {
   CarouselPlacement,
+  Hotspot,
+  HotspotIcon,
+  HotspotKind,
+  HotspotMotion,
+  HotspotSurface,
   LogoPlacement,
+  NavStyle,
   PointShape,
+  Project,
+  Scene,
   SceneModules,
+  SceneTransition,
   Settings,
   Theme,
 } from "./types";
@@ -40,6 +49,60 @@ export const SHAPES: { id: PointShape; label: string }[] = [
   { id: "square", label: "Квадрат" },
 ];
 
+export const NAV_STYLES: { id: NavStyle; label: string; hint: string }[] = [
+  { id: "strip", label: "Лента", hint: "Превью в ряд, со скроллом и привязкой к краю" },
+  { id: "side", label: "Колонка", hint: "Вертикальная панель слева или справа" },
+  { id: "float", label: "Плавающая", hint: "Ленту можно перетащить за ручку" },
+  { id: "grid", label: "Сетка", hint: "Плитка всех сцен по кнопке" },
+  { id: "radial", label: "Круг", hint: "Кольцо сцен вокруг кнопки, удобно для коротких туров" },
+  { id: "groups", label: "Группы", hint: "Сцены собираются по полю «Группа»: этажи, зоны, темы" },
+  { id: "search", label: "Поиск", hint: "Список с фильтром по названию, группе и описанию" },
+  { id: "minimal", label: "Счётчик", hint: "Только стрелки и номер сцены" },
+  { id: "sheet", label: "Шторка", hint: "Нижняя панель в духе телефона" },
+  { id: "hotspots", label: "Только точки", hint: "Без карусели: переход по точкам и мини-карте" },
+];
+
+export const TRANSITIONS: { id: SceneTransition; label: string }[] = [
+  { id: "fade", label: "Проявление" },
+  { id: "zoom", label: "Наезд" },
+  { id: "none", label: "Без анимации" },
+];
+
+export const MOTIONS: { id: HotspotMotion; label: string }[] = [
+  { id: "none", label: "Нет" },
+  { id: "pulse", label: "Пульс" },
+  { id: "bounce", label: "Прыжок" },
+  { id: "glow", label: "Свечение" },
+  { id: "rotate", label: "Вращение" },
+];
+
+export const HOTSPOT_ICONS: { id: HotspotIcon; label: string }[] = [
+  { id: "auto", label: "По типу" },
+  { id: "arrow", label: "Стрелка" },
+  { id: "door", label: "Дверь" },
+  { id: "info", label: "Инфо" },
+  { id: "link", label: "Ссылка" },
+  { id: "image", label: "Кадр" },
+  { id: "camera", label: "Камера" },
+  { id: "video", label: "Видео" },
+  { id: "play", label: "Play" },
+  { id: "audio", label: "Звук" },
+  { id: "pin", label: "Метка" },
+  { id: "star", label: "Звезда" },
+  { id: "map", label: "Карта" },
+  { id: "doc", label: "Документ" },
+  { id: "heart", label: "Сердце" },
+  { id: "compass", label: "Компас" },
+  { id: "eye", label: "Взгляд" },
+];
+
+export const SURFACES: { id: HotspotSurface; label: string }[] = [
+  { id: "modal", label: "Окно по центру" },
+  { id: "panel", label: "Боковая панель" },
+  { id: "tooltip", label: "Карточка снизу" },
+  { id: "direct", label: "Сразу открыть" },
+];
+
 export const CAROUSEL_PLACEMENTS: { id: CarouselPlacement; label: string }[] = [
   { id: "bottom", label: "Снизу" },
   { id: "left", label: "Слева" },
@@ -51,6 +114,13 @@ export const LOGO_PLACEMENTS: { id: LogoPlacement; label: string }[] = [
   { id: "top-center", label: "По центру" },
   { id: "top-right", label: "Справа сверху" },
 ];
+
+const KINDS = new Set<HotspotKind>(["scene", "info", "link", "image", "video", "audio"]);
+const ICONS = new Set<HotspotIcon>(HOTSPOT_ICONS.map((item) => item.id));
+const MOTION_SET = new Set<HotspotMotion>(MOTIONS.map((item) => item.id));
+const SURFACE_SET = new Set<HotspotSurface>(SURFACES.map((item) => item.id));
+const NAVS = new Set<NavStyle>(NAV_STYLES.map((item) => item.id));
+const SHAPE_SET = new Set<PointShape>(SHAPES.map((item) => item.id));
 
 export function defaultModules(partial?: Partial<SceneModules>): SceneModules {
   return {
@@ -86,6 +156,10 @@ export function defaultTheme(): Theme {
     pointScale: 1,
     pointShape: "diamond",
     uiScale: 1,
+    shadow: 22,
+    gap: 8,
+    hotspotMotion: "pulse",
+    customCss: "",
   };
 }
 
@@ -97,6 +171,13 @@ export function defaultSettings(): Settings {
     gyro: false,
     minHfov: 50,
     maxHfov: 120,
+    nav: "strip",
+    transition: "fade",
+    thumbSize: 96,
+    hideBrand: false,
+    guide: false,
+    guideSeconds: 8,
+    deepLink: true,
     carouselPlacement: "bottom",
     logoPlacement: "top-left",
     logoText: "ORBITA",
@@ -110,6 +191,110 @@ export function defaultSettings(): Settings {
     introSubtitle: "Осмотритесь. Точки на стенах ведут в соседние залы.",
     introButton: "Начать просмотр",
     northOffset: 0,
+  };
+}
+
+export function blankHotspot(partial: Pick<Hotspot, "id" | "kind" | "yaw" | "pitch"> & Partial<Hotspot>): Hotspot {
+  return {
+    title: "",
+    text: "",
+    targetSceneId: "",
+    url: "",
+    icon: "auto",
+    motion: "theme",
+    surface: partial.kind === "link" ? "direct" : "modal",
+    ...partial,
+  };
+}
+
+function num(value: unknown, fallback: number, min: number, max: number): number {
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
+function hex(value: unknown): string {
+  return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value) ? value : "";
+}
+
+/** Fill fields added after the first release so old browser drafts keep opening. */
+export function normalizeProject(project: Project): Project {
+  const theme = { ...defaultTheme(), ...(project.theme ?? {}) };
+  if (!SHAPE_SET.has(theme.pointShape)) theme.pointShape = "diamond";
+  if (!MOTION_SET.has(theme.hotspotMotion)) theme.hotspotMotion = "pulse";
+  if (!theme.font) theme.font = "Manrope";
+  theme.radius = num(theme.radius, 16, 0, 28);
+  theme.opacity = num(theme.opacity, 0.78, 0.45, 1);
+  theme.blur = num(theme.blur, 18, 0, 32);
+  theme.pointScale = num(theme.pointScale, 1, 0.7, 1.6);
+  theme.uiScale = num(theme.uiScale, 1, 0.85, 1.25);
+  theme.shadow = num(theme.shadow, 22, 0, 48);
+  theme.gap = num(theme.gap, 8, 4, 24);
+  theme.customCss = String(theme.customCss || "").slice(0, 4000);
+  project.theme = theme;
+
+  const settings = { ...defaultSettings(), ...(project.settings ?? {}) };
+  if (!NAVS.has(settings.nav)) settings.nav = "strip";
+  if (settings.transition !== "fade" && settings.transition !== "zoom" && settings.transition !== "none") {
+    settings.transition = "fade";
+  }
+  if (settings.carouselPlacement !== "bottom" && settings.carouselPlacement !== "left" && settings.carouselPlacement !== "right") {
+    settings.carouselPlacement = "bottom";
+  }
+  settings.thumbSize = num(settings.thumbSize, 96, 64, 140);
+  settings.guideSeconds = num(settings.guideSeconds, 8, 3, 60);
+  settings.minHfov = num(settings.minHfov, 50, 30, 90);
+  settings.maxHfov = num(settings.maxHfov, 120, 90, 140);
+  settings.autorotateSpeed = num(settings.autorotateSpeed, -1.6, -8, 8);
+  settings.northOffset = num(settings.northOffset, 0, 0, 360);
+  settings.hideBrand = Boolean(settings.hideBrand);
+  settings.guide = Boolean(settings.guide);
+  settings.deepLink = settings.deepLink !== false;
+  project.settings = settings;
+
+  project.scenes = (project.scenes ?? []).map((scene) => normalizeScene(scene));
+  if (!project.scenes.some((scene) => scene.id === project.activeSceneId)) {
+    project.activeSceneId = project.scenes[0]?.id ?? "";
+  }
+  return project;
+}
+
+function normalizeScene(scene: Scene): Scene {
+  const next: Scene = {
+    id: scene.id,
+    name: scene.name || "Сцена",
+    description: scene.description || "",
+    imageId: scene.imageId || "",
+    yaw: num(scene.yaw, 0, -360, 360),
+    pitch: num(scene.pitch, 0, -90, 90),
+    hfov: num(scene.hfov, 100, 30, 140),
+    mapX: num(scene.mapX, 50, 0, 100),
+    mapY: num(scene.mapY, 50, 0, 100),
+    group: String(scene.group || ""),
+    featured: Boolean(scene.featured),
+    pointColor: hex(scene.pointColor),
+    modules: { ...defaultModules(), ...(scene.modules ?? {}) },
+    hotspots: (scene.hotspots ?? []).map((hotspot) => normalizeHotspot(hotspot)),
+  };
+  return next;
+}
+
+function normalizeHotspot(hotspot: Hotspot): Hotspot {
+  const kind = KINDS.has(hotspot.kind) ? hotspot.kind : "info";
+  const surface = SURFACE_SET.has(hotspot.surface) ? hotspot.surface : kind === "link" ? "direct" : "modal";
+  const motion = hotspot.motion === "theme" || MOTION_SET.has(hotspot.motion as HotspotMotion) ? hotspot.motion : "theme";
+  return {
+    id: hotspot.id,
+    kind,
+    yaw: num(hotspot.yaw, 0, -360, 360),
+    pitch: num(hotspot.pitch, 0, -90, 90),
+    title: hotspot.title || "",
+    text: hotspot.text || "",
+    targetSceneId: hotspot.targetSceneId || "",
+    url: hotspot.url || "",
+    icon: ICONS.has(hotspot.icon) ? hotspot.icon : "auto",
+    motion,
+    surface,
   };
 }
 

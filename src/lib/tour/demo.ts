@@ -1,6 +1,6 @@
 import { publicAsset } from "@/lib/tour/public-asset";
 import type { Hotspot, Project, Scene } from "./types";
-import { defaultModules, defaultSettings, defaultTheme, uid } from "./presets";
+import { blankHotspot, defaultModules, defaultSettings, defaultTheme, uid } from "./presets";
 
 function asset(path: string): string {
   return publicAsset(path);
@@ -58,7 +58,7 @@ export function makeAmbientWav(): Blob {
 }
 
 function hs(kind: Hotspot["kind"], yaw: number, pitch: number, title: string, extra: Partial<Hotspot>): Hotspot {
-  return {
+  return blankHotspot({
     id: uid("hs"),
     kind,
     yaw,
@@ -68,7 +68,7 @@ function hs(kind: Hotspot["kind"], yaw: number, pitch: number, title: string, ex
     targetSceneId: "",
     url: "",
     ...extra,
-  };
+  });
 }
 
 function makeScene(
@@ -90,6 +90,9 @@ function makeScene(
     hfov: 100,
     mapX,
     mapY,
+    group: intro ? "Первый этаж" : name === "Атриум" ? "Свет" : "Первый этаж",
+    featured: name === "Галерея",
+    pointColor: "",
     hotspots: [],
     modules: defaultModules({ intro }),
   };

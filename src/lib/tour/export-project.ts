@@ -1,5 +1,5 @@
 import * as idb from "./idb";
-import { slugify, uid } from "./presets";
+import { normalizeProject, slugify, uid } from "./presets";
 import type { Project } from "./types";
 import { downloadBlob } from "./download";
 
@@ -44,6 +44,6 @@ export async function importProjectZip(file: File): Promise<Project> {
     });
     await Promise.all(jobs);
   }
-  await idb.saveProject(raw);
+  await idb.saveProject(normalizeProject(raw));
   return raw;
 }

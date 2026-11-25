@@ -2,12 +2,17 @@ import { useState } from "react";
 import {
   CAROUSEL_PLACEMENTS,
   FONTS,
+  HOTSPOT_ICONS,
   LOGO_PLACEMENTS,
+  MOTIONS,
+  NAV_STYLES,
   PRESETS,
   SHAPES,
+  SURFACES,
+  TRANSITIONS,
 } from "@/lib/tour/presets";
 import { useTour } from "@/lib/tour/store";
-import type { HotspotKind, SceneModules } from "@/lib/tour/types";
+import type { HotspotKind, SceneModules, Theme } from "@/lib/tour/types";
 import { Field, Section, SliderRow, SwitchRow, fieldClass } from "./controls";
 
 const MODULES: { key: keyof SceneModules; label: string }[] = [
@@ -30,6 +35,9 @@ const KIND_LABEL: Record<HotspotKind, string> = {
   scene: "переход",
   info: "текст",
   link: "ссылка",
+  image: "кадр",
+  video: "видео",
+  audio: "звук",
 };
 
 export function Settings() {
@@ -108,6 +116,27 @@ export function Settings() {
           </select>
         </Field>
         <SliderRow label="Масштаб интерфейса" min={0.85} max={1.25} step={0.01} value={theme.uiScale} text={theme.uiScale.toFixed(2)} onChange={(value) => update((draft) => { draft.theme.uiScale = value; }, "coalesce", "uiscale")} />
+        <SliderRow label="Тень панелей" min={0} max={48} step={1} value={theme.shadow} text={`${theme.shadow}px`} onChange={(value) => update((draft) => { draft.theme.shadow = value; }, "coalesce", "shadow")} />
+        <SliderRow label="Интервалы" min={4} max={24} step={1} value={theme.gap} text={`${theme.gap}px`} onChange={(value) => update((draft) => { draft.theme.gap = value; }, "coalesce", "gap")} />
+        <Field label="Движение точек" hint="Общее для всех точек. У отдельной точки можно выбрать своё.">
+          <select className={fieldClass} value={theme.hotspotMotion} onChange={(event) => update((draft) => { draft.theme.hotspotMotion = event.target.value as Theme["hotspotMotion"]; }, "skip")}>
+            {MOTIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+          </select>
+        </Field>
+        <Field label="Свой CSS" hint="Попадает в тур как есть. Удобно для переменных --orb-accent, --orb-radius, --orb-point.">
+          <textarea className={`${fieldClass} min-h-20 font-mono text-xs`} value={theme.customCss} placeholder=".orb-title { letter-spacing: 0.2em; }" onChange={(event) => update((draft) => { draft.theme.customCss = event.target.value.slice(0, 4000); }, "coalesce", "css")} />
+        </Field>
+        <div className="flex flex-wrap gap-2 py-2">
+          <button type="button" className="h-10 rounded-lg border border-line px-3 text-sm" onClick={() => downloadTheme(theme)}>Скачать тему</button>
+          <label className="inline-flex h-10 cursor-pointer items-center rounded-lg border border-line px-3 text-sm">
+            Открыть тему
+            <input type="file" accept="application/json,.json" className="hidden" onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void importTheme(file, update);
+              event.target.value = "";
+            }} />
+          </label>
+        </div>
       </Section>
 
       <Section title="Сцена" open={!!open.scene} onToggle={() => toggle("scene")}>
@@ -125,6 +154,34 @@ export function Settings() {
                 if (current) current.description = event.target.value;
               }, "coalesce", "scene-text")} />
             </Field>
+            <Field label="Группа" hint="Этаж, зона или тема. Нужна для навигации «Группы».">
+              <input className={fieldClass} value={scene.group} placeholder="Например, 2 этаж" onChange={(event) => update((draft) => {
+                const current = draft.scenes.find((item) => item.id === scene.id);
+                if (current) current.group = event.target.value;
+              }, "coalesce", "scene-group")} />
+            </Field>
+            <SwitchRow label="Избранная сцена" hint="Звезда на превью в карусели." on={scene.featured} onChange={(value) => update((draft) => {
+              const current = draft.scenes.find((item) => item.id === scene.id);
+              if (current) current.featured = value;
+            }, "coalesce", "scene-feature")} />
+            <ColorRow label="Цвет точек этой сцены" value={scene.pointColor || theme.point} onChange={(value) => update((draft) => {
+              const current = draft.scenes.find((item) => item.id === scene.id);
+              if (current) current.pointColor = value;
+            }, "coalesce", "scene-point")} />
+            {scene.pointColor ? (
+              <button type="button" className="mb-2 text-sm text-muted" onClick={() => update((draft) => {
+                const current = draft.scenes.find((item) => item.id === scene.id);
+                if (current) current.pointColor = "";
+              })}>Вернуть цвет точек тура</button>
+            ) : null}
+            <button type="button" className="mb-2 text-sm text-muted" onClick={() => update((draft) => {
+              const index = draft.scenes.findIndex((item) => item.id === scene.id);
+              const source = draft.scenes[index - 1] ?? draft.scenes[index + 1];
+              const current = draft.scenes[index];
+              if (!source || !current) return;
+              current.modules = structuredClone(source.modules);
+              current.group = source.group;
+            })}>Скопировать модули соседней сцены</button>
             <div className="flex gap-2 py-2">
               <label className="inline-flex h-10 cursor-pointer items-center rounded-lg border border-line px-3 text-sm">
                 Заменить фото
@@ -166,20 +223,47 @@ export function Settings() {
                     </select>
                   </Field>
                 ) : null}
-                {hotspot.kind === "info" ? (
-                  <Field label="Текст">
+                {hotspot.kind === "link" || hotspot.kind === "image" || hotspot.kind === "video" || hotspot.kind === "audio" ? (
+                  <Field label={hotspot.kind === "video" ? "Ссылка на ролик или файл" : hotspot.kind === "audio" ? "Ссылка на аудио" : hotspot.kind === "image" ? "Ссылка на изображение" : "Ссылка"} hint={hotspot.kind === "video" ? "YouTube, Vimeo или прямой адрес файла." : "Только https-адрес. Откроется внутри тура или в новой вкладке."}>
+                    <input className={fieldClass} value={hotspot.url} placeholder="https://" onChange={(event) => update((draft) => {
+                      const current = draft.scenes.flatMap((item) => item.hotspots).find((item) => item.id === hotspot.id);
+                      if (current) current.url = event.target.value;
+                    }, "coalesce", `hs:${hotspot.id}:url`)} />
+                  </Field>
+                ) : null}
+                {hotspot.kind !== "scene" ? (
+                  <Field label={hotspot.kind === "info" ? "Текст" : "Подпись внутри"}>
                     <textarea className={`${fieldClass} min-h-20`} value={hotspot.text} onChange={(event) => update((draft) => {
                       const current = draft.scenes.flatMap((item) => item.hotspots).find((item) => item.id === hotspot.id);
                       if (current) current.text = event.target.value;
                     }, "coalesce", `hs:${hotspot.id}:text`)} />
                   </Field>
                 ) : null}
-                {hotspot.kind === "link" ? (
-                  <Field label="Ссылка">
-                    <input className={fieldClass} value={hotspot.url} placeholder="https://" onChange={(event) => update((draft) => {
+                <Field label="Значок">
+                  <select className={fieldClass} value={hotspot.icon} onChange={(event) => update((draft) => {
+                    const current = draft.scenes.flatMap((item) => item.hotspots).find((item) => item.id === hotspot.id);
+                    if (current) current.icon = event.target.value as typeof current.icon;
+                  }, "skip")}>
+                    {HOTSPOT_ICONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                  </select>
+                </Field>
+                <Field label="Анимация">
+                  <select className={fieldClass} value={hotspot.motion} onChange={(event) => update((draft) => {
+                    const current = draft.scenes.flatMap((item) => item.hotspots).find((item) => item.id === hotspot.id);
+                    if (current) current.motion = event.target.value as typeof current.motion;
+                  }, "skip")}>
+                    <option value="theme">Как в оформлении</option>
+                    {MOTIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                  </select>
+                </Field>
+                {hotspot.kind !== "scene" ? (
+                  <Field label="Как открывается" hint="«Сразу открыть» имеет смысл для внешней ссылки.">
+                    <select className={fieldClass} value={hotspot.surface} onChange={(event) => update((draft) => {
                       const current = draft.scenes.flatMap((item) => item.hotspots).find((item) => item.id === hotspot.id);
-                      if (current) current.url = event.target.value;
-                    }, "coalesce", `hs:${hotspot.id}:url`)} />
+                      if (current) current.surface = event.target.value as typeof current.surface;
+                    }, "skip")}>
+                      {SURFACES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                    </select>
                   </Field>
                 ) : null}
                 <p className="py-1 text-2xs tabular-nums text-faint">yaw {hotspot.yaw.toFixed(1)}° · pitch {hotspot.pitch.toFixed(1)}°</p>
@@ -242,12 +326,29 @@ export function Settings() {
         </Field>
       </Section>
 
-      <Section title="Карусель" open={!!open.carousel} onToggle={() => toggle("carousel")}>
-        <Field label="Расположение">
-          <select className={fieldClass} value={settings.carouselPlacement} onChange={(event) => update((draft) => { draft.settings.carouselPlacement = event.target.value as typeof settings.carouselPlacement; }, "skip")}>
-            {CAROUSEL_PLACEMENTS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+      <Section title="Навигация" open={!!open.carousel} onToggle={() => toggle("carousel")}>
+        <Field label="Тип" hint={NAV_STYLES.find((item) => item.id === settings.nav)?.hint}>
+          <select className={fieldClass} value={settings.nav} onChange={(event) => update((draft) => { draft.settings.nav = event.target.value as typeof settings.nav; }, "skip")}>
+            {NAV_STYLES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
           </select>
         </Field>
+        {settings.nav === "strip" || settings.nav === "side" ? (
+          <Field label="Край" hint="Для ленты и колонки. У колонки «снизу» становится левым краем.">
+            <select className={fieldClass} value={settings.carouselPlacement} onChange={(event) => update((draft) => { draft.settings.carouselPlacement = event.target.value as typeof settings.carouselPlacement; }, "skip")}>
+              {CAROUSEL_PLACEMENTS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+            </select>
+          </Field>
+        ) : null}
+        <SliderRow label="Размер превью" min={64} max={140} step={2} value={settings.thumbSize} text={`${settings.thumbSize}px`} onChange={(value) => update((draft) => { draft.settings.thumbSize = value; }, "coalesce", "thumb")} />
+        <Field label="Переход между сценами">
+          <select className={fieldClass} value={settings.transition} onChange={(event) => update((draft) => { draft.settings.transition = event.target.value as typeof settings.transition; }, "skip")}>
+            {TRANSITIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+          </select>
+        </Field>
+        <SwitchRow label="Маршрут сам" hint="В просмотре сцены сменяют друг друга. Пауза, пока открыта карточка или заставка." on={settings.guide} onChange={(value) => update((draft) => { draft.settings.guide = value; }, "coalesce", "guide")} />
+        <SliderRow label="Пауза маршрута" min={3} max={30} step={1} value={settings.guideSeconds} text={`${settings.guideSeconds} с`} onChange={(value) => update((draft) => { draft.settings.guideSeconds = value; }, "coalesce", "guide-sec")} />
+        <SwitchRow label="Ссылка на ракурс" hint="В адресе страницы запоминаются сцена и поворот. На GitHub Pages обновление не сбрасывает зал." on={settings.deepLink} onChange={(value) => update((draft) => { draft.settings.deepLink = value; }, "coalesce", "deeplink")} />
+        <SwitchRow label="Без надписи ORBITA" hint="Прячет стандартный знак, если вы не загрузили свой логотип." on={settings.hideBrand} onChange={(value) => update((draft) => { draft.settings.hideBrand = value; }, "coalesce", "brand")} />
       </Section>
 
       <Section title="Карта" open={!!open.map} onToggle={() => toggle("map")}>
@@ -298,4 +399,34 @@ function ColorRow({ label, value, onChange }: { label: string; value: string; on
 
 function toHex(value: string): string {
   return /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#e39b3c";
+}
+
+const THEME_KEYS = [
+  "accent", "panel", "text", "point", "font", "radius", "opacity", "blur",
+  "pointScale", "pointShape", "uiScale", "shadow", "gap", "hotspotMotion", "customCss",
+] as const;
+
+function downloadTheme(theme: Theme) {
+  const blob = new Blob([JSON.stringify(theme, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "orbita-theme.json";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+async function importTheme(file: File, update: (recipe: (draft: { theme: Theme }) => void, hist?: "skip") => void) {
+  try {
+    const data = JSON.parse(await file.text()) as Partial<Theme>;
+    if (!data || typeof data !== "object") return;
+    update((draft) => {
+      for (const key of THEME_KEYS) {
+        if (data[key] !== undefined) draft.theme[key] = data[key] as never;
+      }
+      draft.theme.preset = "custom";
+    }, "skip");
+  } catch {
+    /* a bad file just leaves the current theme */
+  }
 }
