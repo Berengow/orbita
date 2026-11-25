@@ -36,12 +36,37 @@
   let booting = false;
   let buildToken = 0;
   const imageCache = new Map();
+  let navOpen = false;
+  let searchQuery = "";
+  let floatPos = null;
+  let hashReady = false;
+  let pendingView = null;
+  let guideAt = 0;
 
-  const ICONS = {
-    info: '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><circle cx="8" cy="4.2" r="1.2" fill="currentColor"/><path fill="currentColor" d="M7.1 7h1.8v5H7.1z"/></svg>',
-    link: '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 12 12 4M7 4h5v5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
-    scene: "",
+  function glyph(body, fill) {
+    return '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="' + (fill ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + body + "</svg>";
+  }
+
+  const GLYPH = {
+    arrow: glyph('<path d="M3 8h10M9 4l4 4-4 4"/>'),
+    info: glyph('<circle cx="8" cy="8" r="5.2"/><path d="M8 7.2V11M8 5.2h.01"/>'),
+    link: glyph('<path d="M6.5 9.5l3-3M6 7.2l-.8-.8a2.4 2.4 0 0 0 0 3.4l1.6 1.6a2.4 2.4 0 0 0 3.4 0L11 10.6M10 8.8l.8.8a2.4 2.4 0 0 1 0 3.4"/>'),
+    image: glyph('<rect x="2.5" y="3.5" width="11" height="9" rx="1.4"/><path d="M2.8 10.5 6 7.6l2.2 2 1.6-1.4 3.2 2.6"/>'),
+    video: glyph('<rect x="2.2" y="4" width="8.2" height="8" rx="1.2"/><path d="M10.4 7.2 13.8 5.4v5.2L10.4 8.8"/>'),
+    audio: glyph('<path d="M4 7h2.2L9 4.6v6.8L6.2 9H4zM11 6.4a3 3 0 0 1 0 3.2"/>'),
+    pin: glyph('<path d="M8 14s4.2-3.4 4.2-6.2A4.2 4.2 0 1 0 3.8 7.8C3.8 10.6 8 14 8 14z"/><circle cx="8" cy="7.6" r="1.2"/>', true),
+    star: glyph('<path d="M8 2.4 9.4 6h3.8L10.6 8.3 11.8 12 8 9.8 4.2 12l1.2-3.7L2.8 6h3.8z"/>', true),
+    door: glyph('<path d="M4 3.2h6.2v9.6H4zM10.2 8h1.2M6.2 8h.1"/>'),
+    camera: glyph('<path d="M2.5 5.5h2l1-1.4h5l1 1.4h2v6h-11z"/><circle cx="8" cy="8.4" r="1.8"/>'),
+    play: glyph('<path d="M6 4.5v7l6-3.5z"/>', true),
+    map: glyph('<path d="M2.5 4.2 6 3l4 1.4L13.5 3v8.8L10 13.2 6 11.8 2.5 13zM6 3v8.8M10 4.4v8.8"/>'),
+    doc: glyph('<path d="M5 2.5h4.2L12 5.2V13.5H5zM9 2.6V5.4h2.6"/>'),
+    heart: glyph('<path d="M8 13s-4.6-2.8-4.6-6A2.6 2.6 0 0 1 8 5.4 2.6 2.6 0 0 1 12.6 7C12.6 10.2 8 13 8 13z"/>'),
+    compass: glyph('<circle cx="8" cy="8" r="5.2"/><path d="M9.4 6.6 7.2 7.2 6.6 9.4 8.8 8.8z"/>'),
+    eye: glyph('<path d="M1.8 8S4 4.6 8 4.6 14.2 8 14.2 8 12 11.4 8 11.4 1.8 8 1.8 8z"/><circle cx="8" cy="8" r="1.4"/>'),
   };
+
+  const ICONS = GLYPH;
 
   function post(message) {
     if (!embed || window.parent === window) return;
@@ -95,10 +120,50 @@
     root.style.setProperty("--orb-point-size", Math.round(22 * theme.pointScale) + "px");
     root.style.setProperty("--orb-scale", String(theme.uiScale));
     root.style.setProperty("--orb-font", `"${theme.font}", "Manrope", sans-serif`);
+    root.style.setProperty("--orb-shadow", (theme.shadow != null ? theme.shadow : 22) + "px");
+    root.style.setProperty("--orb-gap", (theme.gap != null ? theme.gap : 8) + "px");
+    root.style.setProperty("--orb-thumb", (tour.settings.thumbSize || 96) + "px");
+    const scene = active();
+    const point = (scene && scene.pointColor) || theme.point;
+    root.style.setProperty("--orb-point", point);
+    root.style.setProperty("--orb-point-ink", ink(point));
     root.dataset.shape = theme.pointShape;
-    root.dataset.carousel = tour.settings.carouselPlacement;
+    root.dataset.nav = (tour.settings && tour.settings.nav) || "strip";
+    root.dataset.carousel = carouselSide();
     root.dataset.logo = tour.settings.logoPlacement;
+    root.dataset.brand = tour.settings.hideBrand ? "off" : "on";
     document.body.dataset.mode = tour.mode;
+    let style = document.getElementById("orb-custom");
+    if (!style) {
+      style = document.createElement("style");
+      style.id = "orb-custom";
+      document.head.append(style);
+    }
+    style.textContent = String(theme.customCss || "").replace(/<\/style/gi, "").slice(0, 4000);
+  }
+
+  function carouselSide() {
+    const nav = (tour.settings && tour.settings.nav) || "strip";
+    const place = tour.settings.carouselPlacement || "bottom";
+    if (nav === "side") return place === "right" ? "right" : "left";
+    if (nav === "strip") return place;
+    return "bottom";
+  }
+
+  function resolvedIcon(hotspot) {
+    const icon = hotspot.icon && hotspot.icon !== "auto" ? hotspot.icon : "";
+    if (icon && GLYPH[icon]) return icon;
+    if (hotspot.kind === "info") return "info";
+    if (hotspot.kind === "link") return "link";
+    if (hotspot.kind === "image") return "image";
+    if (hotspot.kind === "video") return "play";
+    if (hotspot.kind === "audio") return "audio";
+    return "arrow";
+  }
+
+  function resolvedMotion(hotspot) {
+    if (hotspot.motion && hotspot.motion !== "theme") return hotspot.motion;
+    return (tour.theme && tour.theme.hotspotMotion) || "none";
   }
 
   function imageSig() {
@@ -114,6 +179,9 @@
       sound: tour.settings.soundEnabled,
       gyro: tour.settings.gyro,
       carousel: tour.settings.carouselPlacement,
+      nav: tour.settings.nav || "strip",
+      groups: tour.scenes.map((scene) => (scene.group || "") + (scene.featured ? "*" : "")),
+      brand: Boolean(tour.settings.hideBrand),
       place: tour.placeKind,
       selectedCard: cardHidden,
       about: tour.scenes.some((scene) => scene.modules.about),
@@ -179,6 +247,8 @@
       id: hotspot.id,
       kind: hotspot.kind,
       title: hotspot.title,
+      icon: resolvedIcon(hotspot),
+      motion: resolvedMotion(hotspot),
       showLabel: Boolean(scene.modules.labels && hotspot.title),
       selected: tour.selectedHotspotId === hotspot.id,
     };
@@ -188,9 +258,10 @@
     div.classList.add("orb-hs");
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "orb-mark" + (args.selected ? " is-selected" : "");
+    button.className = "orb-mark" + (args.selected ? " is-selected" : "") + (args.motion && args.motion !== "none" ? " is-" + args.motion : "");
+    button.dataset.icon = args.icon || "";
     button.setAttribute("aria-label", args.title || "Точка");
-    button.innerHTML = ICONS[args.kind] || "";
+    button.innerHTML = GLYPH[args.icon] || GLYPH.arrow;
     const label = document.createElement("span");
     label.className = "orb-label";
     label.textContent = args.title || "";
@@ -216,8 +287,12 @@
     const button = obj.div.querySelector(".orb-mark");
     const label = obj.div.querySelector(".orb-label");
     if (!button || !label) return;
-    button.classList.toggle("is-selected", args.selected);
+    button.className = "orb-mark" + (args.selected ? " is-selected" : "") + (args.motion && args.motion !== "none" ? " is-" + args.motion : "");
     button.setAttribute("aria-label", args.title || "Точка");
+    if (button.dataset.icon !== (args.icon || "")) {
+      button.dataset.icon = args.icon || "";
+      button.innerHTML = GLYPH[args.icon] || GLYPH.arrow;
+    }
     label.textContent = args.title || "";
     label.hidden = !args.showLabel;
   }
@@ -265,6 +340,11 @@
       return;
     }
     pendingScene = null;
+    if (pendingView && viewer) {
+      if (Number.isFinite(pendingView.yaw) && viewer.setYaw) viewer.setYaw(pendingView.yaw);
+      if (Number.isFinite(pendingView.pitch) && viewer.setPitch) viewer.setPitch(pendingView.pitch);
+      pendingView = null;
+    }
     chromeSig = "";
     renderChrome(false);
     applyMotion();
@@ -404,6 +484,7 @@
       const config = viewer.getConfig();
       config.autoRotate = tour.settings.autorotate && tour.mode === "play" ? tour.settings.autorotateSpeed : false;
       config.autoRotateInactivityDelay = 2600;
+      config.sceneFadeDuration = tour.settings.transition === "none" ? 0 : tour.settings.transition === "zoom" ? 280 : 650;
       viewer.setHfovBounds([tour.settings.minHfov, tour.settings.maxHfov]);
       if (typeof viewer.setNorthOffset === "function") viewer.setNorthOffset(tour.settings.northOffset || 0);
       viewer.setUpdate(true);
@@ -462,9 +543,98 @@
     const found = findHotspot(id);
     if (!found) return;
     const hotspot = found.hotspot;
-    if (hotspot.kind === "scene" && hotspot.targetSceneId) goScene(hotspot.targetSceneId);
-    else if (hotspot.kind === "info") openModal(hotspot.title || "Заметка", hotspot.text || "");
-    else if (hotspot.kind === "link" && hotspot.url) window.open(hotspot.url, "_blank", "noopener");
+    if (hotspot.kind === "scene" && hotspot.targetSceneId) {
+      goScene(hotspot.targetSceneId);
+      return;
+    }
+    if (hotspot.kind === "link" && (hotspot.surface === "direct" || !hotspot.surface)) {
+      const url = safeHttp(hotspot.url);
+      if (url) window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    openHotspot(hotspot);
+  }
+
+  function safeHttp(url) {
+    const value = String(url || "").trim();
+    if (/^https?:\/\//i.test(value) || /^blob:/i.test(value)) return value;
+    return "";
+  }
+
+  function videoEmbed(url) {
+    const value = safeHttp(url);
+    if (!value) return "";
+    let match = value.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/);
+    if (match) return "https://www.youtube.com/embed/" + match[1];
+    match = value.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if (match) return "https://player.vimeo.com/video/" + match[1];
+    return "";
+  }
+
+  function openHotspot(hotspot) {
+    const surface = hotspot.surface === "panel" || hotspot.surface === "tooltip" ? hotspot.surface : "modal";
+    modalKind = "open";
+    modalEl.hidden = false;
+    modalEl.classList.toggle("is-panel", surface === "panel");
+    modalEl.classList.toggle("is-tooltip", surface === "tooltip");
+    modalEl.replaceChildren();
+    const sheet = el("div", "orb-sheet orb-panel");
+    sheet.append(el("h2", "", hotspot.title || "Точка"));
+    if (hotspot.text) {
+      const p = el("p", "");
+      p.style.whiteSpace = "pre-wrap";
+      p.textContent = hotspot.text;
+      sheet.append(p);
+    }
+    if (hotspot.kind === "image") {
+      const url = safeHttp(hotspot.url);
+      if (url) {
+        const img = document.createElement("img");
+        img.alt = hotspot.title || "";
+        img.src = url;
+        sheet.append(img);
+      }
+    } else if (hotspot.kind === "video") {
+      const embedSrc = videoEmbed(hotspot.url);
+      const file = safeHttp(hotspot.url);
+      if (embedSrc) {
+        const frame = document.createElement("iframe");
+        frame.src = embedSrc;
+        frame.title = hotspot.title || "Видео";
+        frame.allow = "autoplay; encrypted-media; picture-in-picture";
+        frame.allowFullscreen = true;
+        sheet.append(frame);
+      } else if (file) {
+        const video = document.createElement("video");
+        video.src = file;
+        video.controls = true;
+        sheet.append(video);
+      }
+    } else if (hotspot.kind === "audio") {
+      const url = safeHttp(hotspot.url);
+      if (url) {
+        const audio = document.createElement("audio");
+        audio.src = url;
+        audio.controls = true;
+        sheet.append(audio);
+      }
+    } else if (hotspot.kind === "link") {
+      const url = safeHttp(hotspot.url);
+      if (url) {
+        const a = document.createElement("a");
+        a.href = url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.className = "orb-cta";
+        a.textContent = "Открыть ссылку";
+        sheet.append(a);
+      }
+    }
+    const close = el("button", "orb-textbtn", "Закрыть");
+    close.type = "button";
+    close.addEventListener("click", closeModal);
+    sheet.append(close);
+    modalEl.append(sheet);
   }
 
   function goScene(id) {
@@ -472,6 +642,8 @@
     if (!scene) return;
     tour.activeSceneId = id;
     cardHidden = "";
+    guideAt = Date.now();
+    flashTransition();
     if (scene.image) {
       emptyEl.hidden = true;
       if (booting && builtSig === imageSig()) pendingScene = id;
@@ -479,8 +651,18 @@
       else ensureScene(id);
     }
     post({ type: "scene", id: id });
+    applyTheme();
     renderChrome(true);
     paintDynamic();
+    writeHash();
+  }
+
+  function flashTransition() {
+    const kind = (tour.settings && tour.settings.transition) || "fade";
+    panoEl.classList.remove("is-fade", "is-zoom");
+    if (kind === "none") return;
+    void panoEl.offsetWidth;
+    panoEl.classList.add(kind === "zoom" ? "is-zoom" : "is-fade");
   }
 
   function arm(kind) {
@@ -519,6 +701,192 @@
     link: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.2.4l2-2a5 5 0 0 0-7-7l-1.2 1.1"/><path d="M14 11a5 5 0 0 0-7.2-.4l-2 2a5 5 0 0 0 7 7l1.1-1.1"/></svg>',
   };
 
+  function sceneThumb(item, scene, className) {
+    const button = el("button", className + (item.id === scene.id ? " is-active" : "") + (item.featured ? " is-featured" : ""));
+    button.type = "button";
+    button.dataset.scene = item.id;
+    button.setAttribute("aria-label", item.name || "Сцена");
+    button.setAttribute("aria-current", item.id === scene.id ? "true" : "false");
+    if (item.image) {
+      const img = document.createElement("img");
+      img.alt = "";
+      img.src = item.image;
+      button.append(img);
+    }
+    button.append(el("span", "", item.name || "Сцена"));
+    button.addEventListener("click", () => goScene(item.id));
+    return button;
+  }
+
+  function sceneRow(item, scene) {
+    const button = el("button", "orb-row" + (item.id === scene.id ? " is-active" : ""));
+    button.type = "button";
+    button.dataset.scene = item.id;
+    if (item.image) {
+      const img = document.createElement("img");
+      img.alt = "";
+      img.src = item.image;
+      button.append(img);
+    }
+    const text = el("span", "orb-row-copy");
+    text.append(el("b", "", item.name || "Сцена"));
+    if (item.description) text.append(el("small", "", item.description));
+    button.append(text);
+    button.addEventListener("click", () => goScene(item.id));
+    return button;
+  }
+
+  function filterList(panel) {
+    const query = searchQuery.trim().toLowerCase();
+    panel.querySelectorAll(".orb-row").forEach((node) => {
+      const item = tour.scenes.find((scene) => scene.id === node.dataset.scene);
+      const hay = item ? (item.name + " " + (item.description || "") + " " + (item.group || "")).toLowerCase() : "";
+      node.hidden = Boolean(query) && hay.indexOf(query) === -1;
+    });
+  }
+
+  function dragFloat(event) {
+    const bar = event.currentTarget.parentElement;
+    const start = { x: event.clientX, y: event.clientY, l: bar.offsetLeft, t: bar.offsetTop };
+    const move = (ev) => {
+      const x = Math.max(8, start.l + ev.clientX - start.x);
+      const y = Math.max(8, start.t + ev.clientY - start.y);
+      bar.style.left = x + "px";
+      bar.style.top = y + "px";
+      bar.style.bottom = "auto";
+      bar.style.right = "auto";
+      bar.style.transform = "none";
+      floatPos = { x: x, y: y };
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    event.preventDefault();
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  function renderPanelNav(scene, nav) {
+    if (nav === "radial") {
+      const wrap = el("div", "orb-radial" + (navOpen ? " is-open" : ""));
+      if (navOpen) {
+        const items = tour.scenes.slice(0, 8);
+        items.forEach((item, index) => {
+          const angle = (Math.PI * 2 * index) / Math.max(items.length, 1) - Math.PI / 2;
+          const button = sceneThumb(item, scene, "orb-thumb orb-radial-item");
+          button.style.left = Math.round(Math.cos(angle) * 108) + "px";
+          button.style.top = Math.round(Math.sin(angle) * 108) + "px";
+          wrap.append(button);
+        });
+      }
+      const fab = el("button", "orb-radial-fab", String(tour.scenes.length));
+      fab.type = "button";
+      fab.setAttribute("aria-label", "Сцены");
+      fab.setAttribute("aria-expanded", navOpen ? "true" : "false");
+      fab.addEventListener("click", () => {
+        navOpen = !navOpen;
+        renderChrome(true);
+      });
+      wrap.append(fab);
+      uiEl.append(wrap);
+      return;
+    }
+    if (nav === "grid" || nav === "sheet") {
+      const launch = el("button", "orb-nav-launch orb-panel", nav === "sheet" ? (scene.name || "Сцены") : "Сцены");
+      launch.type = "button";
+      launch.setAttribute("aria-expanded", navOpen ? "true" : "false");
+      launch.addEventListener("click", () => {
+        navOpen = !navOpen;
+        renderChrome(true);
+      });
+      uiEl.append(launch);
+      if (!navOpen) return;
+    }
+    const panel = el("div", "orb-list orb-panel" + (nav === "grid" ? " orb-grid" : "") + (nav === "sheet" ? " is-sheet" : ""));
+    panel.setAttribute("role", "navigation");
+    panel.setAttribute("aria-label", "Сцены");
+    if (nav === "search") {
+      const input = document.createElement("input");
+      input.className = "orb-search";
+      input.type = "search";
+      input.placeholder = "Название, группа, описание";
+      input.setAttribute("aria-label", "Поиск сцен");
+      input.value = searchQuery;
+      input.addEventListener("input", () => {
+        searchQuery = input.value;
+        filterList(panel);
+      });
+      panel.append(input);
+    }
+    if (nav === "groups") {
+      const buckets = new Map();
+      tour.scenes.forEach((item) => {
+        const key = (item.group || "").trim() || "Без группы";
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key).push(item);
+      });
+      buckets.forEach((items, key) => {
+        panel.append(el("p", "orb-group", key));
+        items.forEach((item) => panel.append(sceneRow(item, scene)));
+      });
+    } else if (nav === "grid") {
+      tour.scenes.forEach((item) => panel.append(sceneThumb(item, scene, "orb-thumb")));
+    } else {
+      tour.scenes.forEach((item) => panel.append(sceneRow(item, scene)));
+    }
+    uiEl.append(panel);
+    if (nav === "search") filterList(panel);
+  }
+
+  function renderNav(scene, mod) {
+    const nav = (tour.settings && tour.settings.nav) || "strip";
+    document.documentElement.dataset.nav = nav;
+    const showCarousel = Boolean(mod.carousel) && nav !== "hotspots";
+    const arrowsOk = nav === "strip" || nav === "side" || nav === "float" || nav === "minimal" || nav === "hotspots";
+    const showArrows = Boolean(mod.arrows) && arrowsOk;
+    if (nav === "hotspots" && !showArrows) return;
+    if (nav === "minimal" || nav === "hotspots") {
+      const bar = el("div", "orb-carousel orb-nav-minimal");
+      bar.append(iconButton("orb-arrow", "Предыдущая сцена", SVG.left, () => step(-1)));
+      if (nav === "minimal") {
+        const index = Math.max(0, tour.scenes.findIndex((item) => item.id === scene.id));
+        bar.append(el("div", "orb-counter orb-panel", (index + 1) + " / " + tour.scenes.length));
+      }
+      bar.append(iconButton("orb-arrow", "Следующая сцена", SVG.right, () => step(1)));
+      uiEl.append(bar);
+      return;
+    }
+    if (nav === "grid" || nav === "radial" || nav === "groups" || nav === "search" || nav === "sheet") {
+      if (showCarousel) renderPanelNav(scene, nav);
+      return;
+    }
+    const bar = el("div", "orb-carousel" + (nav === "float" ? " orb-panel is-float" : ""));
+    if (nav === "float") {
+      const handle = el("button", "orb-drag", "⋮");
+      handle.type = "button";
+      handle.setAttribute("aria-label", "Перетащить ленту");
+      handle.addEventListener("pointerdown", dragFloat);
+      bar.append(handle);
+    }
+    if (showArrows) bar.append(iconButton("orb-arrow", "Предыдущая сцена", SVG.left, () => step(-1)));
+    if (showCarousel) {
+      const thumbs = el("div", "orb-thumbs");
+      thumbs.setAttribute("role", "listbox");
+      thumbs.setAttribute("aria-label", "Сцены");
+      tour.scenes.forEach((item) => thumbs.append(sceneThumb(item, scene, "orb-thumb")));
+      bar.append(thumbs);
+    }
+    if (showArrows) bar.append(iconButton("orb-arrow", "Следующая сцена", SVG.right, () => step(1)));
+    if (nav === "float" && floatPos) {
+      bar.style.left = floatPos.x + "px";
+      bar.style.top = floatPos.y + "px";
+      bar.style.bottom = "auto";
+      bar.style.transform = "none";
+    }
+    uiEl.append(bar);
+  }
+
   function renderChrome(force) {
     const sig = structureSig();
     if (!force && sig === chromeSig && uiEl.childElementCount) return;
@@ -537,8 +905,13 @@
         img.src = tour.logoUrl;
         logo.append(img);
       }
-      logo.append(document.createTextNode(tour.settings.logoText || tour.title || "ORBITA"));
-      top.append(logo);
+      const brandText = tour.settings.hideBrand && (tour.settings.logoText || "ORBITA") === "ORBITA" && !tour.logoUrl
+        ? ""
+        : (tour.settings.logoText || (tour.settings.hideBrand ? "" : tour.title || "ORBITA"));
+      if (tour.logoUrl || brandText) {
+        if (brandText) logo.append(document.createTextNode(brandText));
+        top.append(logo);
+      }
     }
 
     if (mod.sceneTitle) uiEl.append(el("div", "orb-title orb-panel", scene.name));
@@ -587,30 +960,7 @@
       uiEl.append(card);
     }
 
-    if (mod.carousel || mod.arrows) {
-      const bar = el("div", "orb-carousel");
-      if (mod.arrows) bar.append(iconButton("orb-arrow", "Предыдущая сцена", SVG.left, () => step(-1)));
-      if (mod.carousel) {
-        const thumbs = el("div", "orb-thumbs");
-        tour.scenes.forEach((item) => {
-          const button = el("button", "orb-thumb" + (item.id === scene.id ? " is-active" : ""));
-          button.type = "button";
-          button.dataset.scene = item.id;
-          if (item.image) {
-            const img = document.createElement("img");
-            img.alt = "";
-            img.src = item.image;
-            button.append(img);
-          }
-          button.append(el("span", "", item.name));
-          button.addEventListener("click", () => goScene(item.id));
-          thumbs.append(button);
-        });
-        bar.append(thumbs);
-      }
-      if (mod.arrows) bar.append(iconButton("orb-arrow", "Следующая сцена", SVG.right, () => step(1)));
-      uiEl.append(bar);
-    }
+    if (mod.carousel || mod.arrows) renderNav(scene, mod);
 
     if (mod.minimap && tour.scenes.length) {
       const map = el("div", "orb-map orb-panel");
@@ -641,6 +991,9 @@
       const tools = el("div", "orb-tools");
       [
         ["info", "Заметка", SVG.card],
+        ["image", "Кадр", GLYPH.image],
+        ["video", "Видео", GLYPH.play],
+        ["audio", "Звук", GLYPH.audio],
         ["scene", "Переход", SVG.pin],
         ["link", "Ссылка", SVG.link],
       ].forEach(([kind, label, svg]) => {
@@ -661,12 +1014,20 @@
     if (title) title.textContent = scene.name;
     const card = uiEl.querySelector(".orb-card p");
     if (card) card.textContent = scene.description;
-    uiEl.querySelectorAll(".orb-thumb").forEach((node) => {
+    uiEl.querySelectorAll(".orb-thumb, .orb-row").forEach((node) => {
       node.classList.toggle("is-active", node.dataset.scene === scene.id);
+      if (node.getAttribute("aria-current") != null) node.setAttribute("aria-current", node.dataset.scene === scene.id ? "true" : "false");
       const span = node.querySelector("span");
       const match = tour.scenes.find((item) => item.id === node.dataset.scene);
-      if (span && match) span.textContent = match.name;
+      if (span && match && !span.querySelector("b")) span.textContent = match.name;
     });
+    const counter = uiEl.querySelector(".orb-counter");
+    if (counter) {
+      const index = Math.max(0, tour.scenes.findIndex((item) => item.id === scene.id));
+      counter.textContent = (index + 1) + " / " + tour.scenes.length;
+    }
+    const launch = uiEl.querySelector(".orb-nav-launch");
+    if (launch && document.documentElement.dataset.nav === "sheet") launch.textContent = scene.name || "Сцены";
     uiEl.querySelectorAll(".orb-dot").forEach((node) => {
       const match = tour.scenes.find((item) => item.id === node.dataset.map);
       node.classList.toggle("is-active", node.dataset.map === scene.id);
@@ -759,6 +1120,7 @@
   function closeModal() {
     modalKind = "";
     modalEl.hidden = true;
+    modalEl.classList.remove("is-panel", "is-tooltip");
     modalEl.replaceChildren();
   }
 
@@ -809,6 +1171,7 @@
   function apply(next) {
     next = normalizeTour(next);
     if (!next) return;
+    consumeHash(next);
     tour = next;
     document.title = tour.title || "ORBITA";
     applyTheme();
@@ -838,6 +1201,38 @@
     paintDynamic();
   }
 
+  function consumeHash(next) {
+    if (embed || hashReady || !next || !next.settings || !next.settings.deepLink) return;
+    hashReady = true;
+    const query = new URLSearchParams(String(location.hash || "").replace(/^#/, ""));
+    const id = query.get("s");
+    if (id && next.scenes.some((scene) => scene.id === id)) next.activeSceneId = id;
+    const yaw = Number(query.get("y"));
+    const pitch = Number(query.get("p"));
+    if (Number.isFinite(yaw) || Number.isFinite(pitch)) pendingView = { yaw: yaw, pitch: pitch };
+  }
+
+  function writeHash() {
+    if (embed || !tour || tour.mode !== "play" || !tour.settings.deepLink || !viewer || !viewer.isLoaded || !viewer.isLoaded()) return;
+    const scene = active();
+    if (!scene) return;
+    const hash = "s=" + encodeURIComponent(scene.id) + "&y=" + Math.round(viewer.getYaw()) + "&p=" + Math.round(viewer.getPitch());
+    if (location.hash.replace(/^#/, "") === hash) return;
+    history.replaceState(null, "", "#" + hash);
+  }
+
+  function tickGuide() {
+    if (!tour || tour.mode !== "play" || !tour.settings.guide || !introDismissed || modalKind) {
+      guideAt = Date.now();
+      return;
+    }
+    const wait = Math.max(3, Number(tour.settings.guideSeconds) || 8) * 1000;
+    if (!guideAt) guideAt = Date.now();
+    if (Date.now() - guideAt < wait) return;
+    guideAt = Date.now();
+    step(1);
+  }
+
   window.addEventListener("message", (event) => {
     if (event.origin !== location.origin) return;
     const data = event.data;
@@ -855,10 +1250,19 @@
   });
 
   window.addEventListener("keydown", (event) => {
+    const tag = event.target && event.target.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
     if (event.key === "Escape") {
       if (modalKind) closeModal();
-      else if (tour && tour.placeKind) arm(tour.placeKind);
+      else if (navOpen) {
+        navOpen = false;
+        renderChrome(true);
+      } else if (tour && tour.placeKind) arm(tour.placeKind);
+      return;
     }
+    if (!tour || tour.mode !== "play") return;
+    if (event.key === "ArrowRight") step(1);
+    if (event.key === "ArrowLeft") step(-1);
   });
 
   if (typeof ResizeObserver !== "undefined") {
@@ -877,6 +1281,12 @@
     viewTimer = now;
     post({ type: "view", yaw: viewer.getYaw(), pitch: viewer.getPitch(), hfov: viewer.getHfov() });
   }, 260);
+
+  window.setInterval(() => {
+    if (!viewer || !viewer.isLoaded || !viewer.isLoaded()) return;
+    writeHash();
+    tickGuide();
+  }, 900);
 
   if (embed) post({ type: "ready" });
   else if (window.TOUR) apply(window.TOUR);
