@@ -1,4 +1,5 @@
 import { Copy, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { plural } from "@/lib/tour/presets";
 import { useTour } from "@/lib/tour/store";
 
@@ -9,30 +10,46 @@ export function SceneRail({ onAdd }: { onAdd: () => void }) {
   const reorder = useTour((s) => s.reorderScenes);
   const duplicate = useTour((s) => s.duplicateScene);
   const remove = useTour((s) => s.removeScene);
+  const [query, setQuery] = useState("");
   if (!project) return null;
+  const needle = query.trim().toLowerCase();
+  const scenes = needle
+    ? project.scenes.filter((scene) => `${scene.name} ${scene.group} ${scene.description}`.toLowerCase().includes(needle))
+    : project.scenes;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between px-3 py-3">
+      <div className="flex items-center justify-between px-3 py-3 border-b border-line">
         <p className="text-2xs tracking-wide text-muted uppercase">
-          Сцены {project.scenes.length ? project.scenes.length : ""}
+          Сцены {project.scenes.length ? `· ${project.scenes.length}` : ""}
         </p>
         <button
           type="button"
           onClick={onAdd}
-          className="inline-flex h-9 items-center gap-1 rounded-lg bg-accent px-3 text-sm font-medium text-accent-ink"
+          className="inline-flex h-8 items-center gap-1 rounded-lg bg-accent px-2.5 text-xs font-medium text-accent-ink"
         >
-          <Plus className="size-4" />
+          <Plus className="size-3.5" />
           Добавить
         </button>
       </div>
+      <div className="px-3 py-2">
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Поиск сцен"
+          aria-label="Поиск сцен"
+          className="h-8 w-full rounded-lg border border-line bg-bg px-2.5 text-xs outline-none placeholder:text-faint"
+        />
+      </div>
       <div className="min-h-0 flex-1 space-y-1 overflow-auto px-2 pb-3">
-        {project.scenes.length === 0 ? (
+        {scenes.length === 0 ? (
           <p className="px-2 py-6 text-sm text-pretty text-muted">
-            Перетащите сюда равноугольные панорамы или нажмите «Добавить». Порядок можно менять мышью.
+            {project.scenes.length === 0
+              ? "Перетащите сюда равноугольные панорамы или нажмите «Добавить». Порядок можно менять мышью."
+              : "Ничего не найдено."}
           </p>
         ) : null}
-        {project.scenes.map((scene) => {
+        {scenes.map((scene) => {
           const active = scene.id === project.activeSceneId;
           const src = urls[scene.imageId];
           return (

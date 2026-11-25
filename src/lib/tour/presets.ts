@@ -27,12 +27,29 @@ export interface ThemePreset {
 }
 
 export const PRESETS: ThemePreset[] = [
+  // Minimal / Clean
   { id: "coal", name: "Уголь", swatch: "#e29a3a", accent: "#e29a3a", panel: "#161311", text: "#f6f1ea", point: "#e29a3a" },
-  { id: "lagoon", name: "Лагуна", swatch: "#3ec6c0", accent: "#3ec6c0", panel: "#10211f", text: "#e7f6f4", point: "#7ee0c8" },
+  { id: "ink", name: "Тушь", swatch: "#f4f4f4", accent: "#ffffff", panel: "#0e0e10", text: "#f7f7f7", point: "#ffffff" },
   { id: "bone", name: "Кость", swatch: "#d7c4ae", accent: "#8c5a3c", panel: "#f3efe8", text: "#241c16", point: "#c47a4a" },
-  { id: "pine", name: "Хвоя", swatch: "#b6d36a", accent: "#b6d36a", panel: "#141812", text: "#eef3e4", point: "#c6e07a" },
-  { id: "ink", name: "Тушь", swatch: "#f4f4f4", accent: "#f4f4f4", panel: "#0e0e10", text: "#f7f7f7", point: "#ffffff" },
+  { id: "paper", name: "Бумага", swatch: "#f8f6f2", accent: "#1a1a1a", panel: "#ffffff", text: "#1a1a1a", point: "#333333" },
+  // Luxury / Dark
   { id: "wine", name: "Вино", swatch: "#e07088", accent: "#e07088", panel: "#1a1014", text: "#f8ecee", point: "#e07088" },
+  { id: "noir", name: "Нуар", swatch: "#c9a96e", accent: "#c9a96e", panel: "#0d0d0d", text: "#f0e6d2", point: "#c9a96e" },
+  { id: "obsidian", name: "Обсидиан", swatch: "#6b7cff", accent: "#6b7cff", panel: "#0a0a12", text: "#e8eaf6", point: "#8b9aff" },
+  // Soft / Light
+  { id: "lagoon", name: "Лагуна", swatch: "#3ec6c0", accent: "#3ec6c0", panel: "#10211f", text: "#e7f6f4", point: "#7ee0c8" },
+  { id: "sage", name: "Шалфей", swatch: "#a8c5b0", accent: "#5a8a6e", panel: "#f4f7f5", text: "#1e2a24", point: "#5a8a6e" },
+  { id: "blush", name: "Румянец", swatch: "#f4c2c2", accent: "#d4a5a5", panel: "#fdf8f8", text: "#3d2a2a", point: "#c97b7b" },
+  // Architectural / Real Estate
+  { id: "stone", name: "Камень", swatch: "#8b8680", accent: "#5c5854", panel: "#2a2725", text: "#f0ece8", point: "#c4b8a8" },
+  { id: "marble", name: "Мрамор", swatch: "#e8e4df", accent: "#9a8f85", panel: "#f7f5f3", text: "#2c2825", point: "#7a6e64" },
+  { id: "pine", name: "Хвоя", swatch: "#b6d36a", accent: "#b6d36a", panel: "#141812", text: "#eef3e4", point: "#c6e07a" },
+  // Editorial / Gallery
+  { id: "gallery", name: "Галерея", swatch: "#f0f0f0", accent: "#111111", panel: "#ffffff", text: "#111111", point: "#000000" },
+  { id: "editorial", name: "Редакция", swatch: "#1a1a1a", accent: "#ff3b30", panel: "#0f0f0f", text: "#f5f5f5", point: "#ff3b30" },
+  // Warm / Cold
+  { id: "amber", name: "Янтарь", swatch: "#ffb347", accent: "#ff9f1c", panel: "#1c140e", text: "#fff5e6", point: "#ffb347" },
+  { id: "arctic", name: "Арктика", swatch: "#a8d8ea", accent: "#6eb5d0", panel: "#0e1a22", text: "#e8f4f8", point: "#a8d8ea" },
 ];
 
 export const FONTS: { id: string; label: string }[] = [
@@ -224,10 +241,10 @@ export function normalizeProject(project: Project): Project {
   if (!MOTION_SET.has(theme.hotspotMotion)) theme.hotspotMotion = "pulse";
   if (!theme.font) theme.font = "Manrope";
   theme.radius = num(theme.radius, 16, 0, 28);
-  theme.opacity = num(theme.opacity, 0.78, 0.45, 1);
+  theme.opacity = num(theme.opacity > 1 ? theme.opacity / 100 : theme.opacity, 0.78, 0.45, 1);
   theme.blur = num(theme.blur, 18, 0, 32);
-  theme.pointScale = num(theme.pointScale, 1, 0.7, 1.6);
-  theme.uiScale = num(theme.uiScale, 1, 0.85, 1.25);
+  theme.pointScale = num(theme.pointScale > 3 ? theme.pointScale / 100 : theme.pointScale, 1, 0.7, 1.6);
+  theme.uiScale = num(theme.uiScale > 2 ? theme.uiScale / 100 : theme.uiScale, 1, 0.85, 1.25);
   theme.shadow = num(theme.shadow, 22, 0, 48);
   theme.gap = num(theme.gap, 8, 4, 24);
   theme.customCss = String(theme.customCss || "").slice(0, 4000);
@@ -240,6 +257,9 @@ export function normalizeProject(project: Project): Project {
   }
   if (settings.carouselPlacement !== "bottom" && settings.carouselPlacement !== "left" && settings.carouselPlacement !== "right") {
     settings.carouselPlacement = "bottom";
+  }
+  if (settings.logoPlacement !== "top-left" && settings.logoPlacement !== "top-center" && settings.logoPlacement !== "top-right") {
+    settings.logoPlacement = "top-left";
   }
   settings.thumbSize = num(settings.thumbSize, 96, 64, 140);
   settings.guideSeconds = num(settings.guideSeconds, 8, 3, 60);
