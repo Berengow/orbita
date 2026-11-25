@@ -1,0 +1,17 @@
+{
+  "name": "ORBITA",
+  "short_name": "ORBITA",
+  "id": "/orbita/",
+  "start_url": "/orbita/",
+  "scope": "/orbita/",
+  "display": "standalone",
+  "background_color": "#100e0c",
+  "theme_color": "#100e0c",
+  "icons": [
+    {
+      "src": "/orbita/__grok/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
