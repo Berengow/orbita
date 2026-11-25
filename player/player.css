@@ -1406,3 +1406,46 @@ html[data-navactive="on"] .orb-row.is-active { background: var(--orb-nav-active)
 html[data-fade="on"] .orb-rail.is-vert.is-overflow .orb-thumbs {
   mask-image: linear-gradient(180deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
 }
+
+.orb-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, transparent 46%, rgba(0, 0, 0, 0.42) 100%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.34), transparent 16%, transparent 74%, rgba(0, 0, 0, 0.46));
+}
+.orb-halo {
+  position: absolute;
+  inset: -7px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--orb-point) 75%, white);
+  pointer-events: none;
+  animation: orb-halo 2.6s ease-out infinite;
+}
+@keyframes orb-halo {
+  0% { transform: scale(0.82); opacity: 0.75; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+.orb-sheet h2 {
+  font-size: clamp(32px, 5vw, 52px);
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+}
+.orb-carousel { position: relative; }
+.orb-carousel::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--orb-accent) 85%, white), transparent);
+  pointer-events: none;
+}
+.orb-row.is-active img { filter: saturate(1.12) contrast(1.04); }
+.orb-loader span { box-shadow: 0 0 18px var(--orb-accent); }
+@media (prefers-reduced-motion: reduce) {
+  .orb-halo { animation: none; opacity: 0.45; }
+}
