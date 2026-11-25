@@ -674,3 +674,68 @@ html[data-nav="float"] .orb-thumbs { max-width: min(52vw, 420px); }
   .orb-loader span { animation: none; width: 100%; }
   .orb-mark::before, .orb-mark.is-bounce, .orb-mark.is-rotate::after, .orb-pano { animation: none; }
 }
+
+/* Premium polish for carousels */
+.orb-carousel {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+}
+.orb-thumb {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+}
+.orb-thumb:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.28);
+}
+.orb-thumb.is-active {
+  box-shadow: 0 0 0 2px var(--orb-accent), 0 8px 24px color-mix(in srgb, var(--orb-accent) 35%, transparent);
+}
+.orb-thumb.is-featured::after {
+  content: "★";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 10px;
+  color: var(--orb-accent);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+html[data-nav="strip"] .orb-carousel {
+  background: color-mix(in srgb, var(--orb-panel) 85%, transparent);
+  backdrop-filter: blur(calc(var(--orb-blur) + 4px));
+  border: 1px solid color-mix(in srgb, var(--orb-text) 12%, transparent);
+}
+html[data-nav="side"] .orb-carousel {
+  background: color-mix(in srgb, var(--orb-panel) 90%, transparent);
+  backdrop-filter: blur(var(--orb-blur));
+}
+html[data-nav="float"] .orb-carousel {
+  background: color-mix(in srgb, var(--orb-panel) 75%, transparent);
+  backdrop-filter: blur(calc(var(--orb-blur) + 8px));
+  box-shadow: 0 16px 40px rgba(0,0,0,0.32);
+}
+.orb-nav-launch {
+  background: color-mix(in srgb, var(--orb-panel) 88%, transparent);
+  backdrop-filter: blur(var(--orb-blur));
+  border: 1px solid color-mix(in srgb, var(--orb-text) 14%, transparent);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.orb-nav-launch:hover {
+  background: color-mix(in srgb, var(--orb-accent) 20%, var(--orb-panel));
+  transform: translateX(-50%) translateY(-1px);
+}
+.orb-row {
+  transition: background 0.12s ease;
+}
+.orb-row:hover {
+  background: color-mix(in srgb, var(--orb-text) 8%, transparent);
+}
+.orb-grid {
+  background: color-mix(in srgb, var(--orb-panel) 92%, transparent);
+  backdrop-filter: blur(calc(var(--orb-blur) + 6px));
+  border: 1px solid color-mix(in srgb, var(--orb-text) 12%, transparent);
+  border-radius: var(--orb-radius);
+  padding: 12px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+}
