@@ -17,7 +17,7 @@ export function TopBar() {
   if (!project) return null;
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-line px-2 sm:gap-3 sm:px-3">
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-white/5 bg-surface/80 px-2 backdrop-blur-xl sm:gap-3 sm:px-3">
       <Mark />
       <div className="min-w-0 flex-1">
         <p className="font-display text-sm tracking-wide">ORBITA</p>

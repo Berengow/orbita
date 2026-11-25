@@ -4,6 +4,7 @@
 
   app.innerHTML =
     '<div id="pano" class="orb-pano"></div>' +
+    '<div class="orb-vignette"></div>' +
     '<div id="loader" class="orb-loader" hidden><span></span></div>' +
     '<div id="empty" class="orb-empty" hidden></div>' +
     '<div id="ui" class="orb-ui"></div>' +
@@ -307,6 +308,13 @@
     }
   }
 
+  function ensureHalo(button) {
+    if (button.querySelector(".orb-halo")) return;
+    const halo = document.createElement("span");
+    halo.className = "orb-halo";
+    button.append(halo);
+  }
+
   function renderMark(div, args) {
     div.classList.add("orb-hs");
     const button = document.createElement("button");
@@ -315,6 +323,7 @@
     button.dataset.icon = args.icon || "";
     button.setAttribute("aria-label", args.title || "Точка");
     button.innerHTML = GLYPH[args.icon] || GLYPH.arrow;
+    ensureHalo(button);
     paintMark(button, args);
     const label = document.createElement("span");
     label.className = "orb-label";
@@ -347,6 +356,7 @@
       button.dataset.icon = args.icon || "";
       button.innerHTML = GLYPH[args.icon] || GLYPH.arrow;
     }
+    ensureHalo(button);
     label.textContent = args.title || "";
     label.hidden = !args.showLabel;
     paintMark(button, args);

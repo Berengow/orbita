@@ -20,14 +20,15 @@ export function SceneRail({ onAdd }: { onAdd: () => void }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between px-3 py-3 border-b border-line">
-        <p className="text-2xs tracking-wide text-muted uppercase">
-          Сцены {project.scenes.length ? `· ${project.scenes.length}` : ""}
-        </p>
+      <div className="flex items-center justify-between border-b border-white/5 px-3 py-3">
+        <div>
+          <p className="font-display text-[11px] tracking-[0.18em] text-fg">СЦЕНЫ</p>
+          <p className="text-2xs text-faint">{project.scenes.length ? `${project.scenes.length} в туре` : "пока пусто"}</p>
+        </div>
         <button
           type="button"
           onClick={onAdd}
-          className="inline-flex h-8 items-center gap-1 rounded-lg bg-accent px-2.5 text-xs font-medium text-accent-ink"
+          className="inline-flex h-8 items-center gap-1 rounded-full bg-accent px-3 text-xs font-medium text-accent-ink"
         >
           <Plus className="size-3.5" />
           Добавить
@@ -85,7 +86,10 @@ export function SceneRail({ onAdd }: { onAdd: () => void }) {
                   ) : null}
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate text-sm">{scene.featured ? "★ " : ""}{scene.name}</span>
+                  <span className="flex items-center gap-1.5 truncate text-sm">
+                    {active ? <i className="size-1.5 shrink-0 rounded-full bg-accent shadow-[0_0_8px_var(--color-accent)]" /> : null}
+                    <span className="truncate">{scene.featured ? "★ " : ""}{scene.name}</span>
+                  </span>
                   <span className="block truncate text-2xs text-faint">
                     {scene.group ? `${scene.group} · ` : ""}
                     {plural(scene.hotspots.length, "точка", "точки", "точек")}

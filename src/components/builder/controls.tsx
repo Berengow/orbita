@@ -21,8 +21,8 @@ export function Dialog({
   children: ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-bg/80 p-4" role="dialog" aria-modal="true">
-      <div className="max-h-[85dvh] w-full max-w-md overflow-auto rounded-card border border-line bg-surface p-5">
+    <div className="fixed inset-0 z-40 grid place-items-center bg-black/70 p-4 backdrop-blur-md" role="dialog" aria-modal="true">
+      <div className="max-h-[85dvh] w-full max-w-md overflow-auto rounded-3xl border border-white/10 bg-surface p-5 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
         <div className="mb-4 flex items-start justify-between gap-3">
           <h2 className="font-display text-lg tracking-tight text-balance">{title}</h2>
           <button type="button" onClick={onClose} className="text-sm text-muted" aria-label="Закрыть">

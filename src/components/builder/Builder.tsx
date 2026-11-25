@@ -132,7 +132,7 @@ function Shell() {
       {mode === "edit" ? <TopBar /> : null}
       <div className="relative flex min-h-0 flex-1">
         {mode === "edit" && leftOpen ? (
-          <aside className="hidden w-rail shrink-0 border-r border-line bg-surface lg:block">
+          <aside className="hidden w-rail shrink-0 border-r border-white/5 bg-surface/90 backdrop-blur lg:block">
             <SceneRail onAdd={() => fileRef.current?.click()} />
           </aside>
         ) : null}
@@ -140,7 +140,7 @@ function Shell() {
         {mode === "edit" && rightOpen ? (
           <aside
             style={{ width: inspectorWidth }}
-            className={`orb-inspector relative hidden shrink-0 border-l border-line bg-surface lg:block ${resizing ? "" : "transition-[width] duration-200"}`}
+            className={`orb-inspector relative hidden shrink-0 border-l border-white/5 bg-surface/90 backdrop-blur lg:block ${resizing ? "" : "transition-[width] duration-200"}`}
           >
             <div
               role="separator"
