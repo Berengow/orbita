@@ -1223,9 +1223,15 @@ html[data-density="comfy"] .orb-row img { width: 84px; height: 56px; }
 .has-filter > .orb-search { width: 100%; margin: 0 0 8px; }
 html[data-nav="strip"] .orb-row,
 html[data-nav="float"] .orb-row {
-  width: 220px;
+  width: var(--orb-card-w, 220px);
   flex: none;
 }
+.orb-thumbs, .orb-list, .orb-grid { gap: var(--orb-card-gap, 8px); scroll-snap-type: none; }
+.orb-row, .orb-thumb { scroll-snap-align: none; }
+.orb-row-index { display: none; font-style: normal; font-size: 10px; letter-spacing: 0.04em; color: var(--orb-muted); }
+html[data-index="on"] .orb-row-index { display: block; }
+html[data-photo="square"] .orb-row img { border-radius: 2px; }
+html[data-photo="circle"] .orb-row img { border-radius: 999px; width: 46px; height: 46px; }
 html[data-nav="side"] .orb-thumbs {
   flex-direction: column;
   align-items: stretch;

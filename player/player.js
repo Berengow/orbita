@@ -133,6 +133,10 @@
     root.dataset.look = activeLook();
     root.dataset.detail = (tour.settings && tour.settings.navDetail) || "note";
     root.dataset.density = (tour.settings && tour.settings.navDensity) || "regular";
+    root.dataset.photo = (tour.settings && tour.settings.navImage) || "rounded";
+    root.dataset.index = tour.settings && tour.settings.navIndex ? "on" : "off";
+    root.style.setProperty("--orb-card-w", ((tour.settings && tour.settings.navCardWidth) || 220) + "px");
+    root.style.setProperty("--orb-card-gap", ((tour.settings && tour.settings.navGap) || 8) + "px");
     root.dataset.carousel = carouselSide();
     root.dataset.logo = tour.settings.logoPlacement;
     root.dataset.brand = tour.settings.hideBrand ? "off" : "on";
@@ -834,7 +838,7 @@
     }
     post({ type: "scene", id: id });
     applyTheme();
-    renderChrome(true);
+    renderChrome(false);
     paintDynamic();
     writeHash();
   }
@@ -1051,6 +1055,8 @@
       button.append(img);
     }
     const text = el("span", "orb-row-copy");
+    const index = tour.scenes.findIndex((entry) => entry.id === item.id);
+    text.append(el("i", "orb-row-index", String(index + 1)));
     text.append(el("b", "", item.name || "Сцена"));
     text.append(el("small", "orb-row-note", item.description || ""));
     text.append(el("small", "orb-row-group", item.group || ""));
@@ -1329,24 +1335,52 @@
   }
 
   let shownScene = "";
+  let railScroll = { left: 0, top: 0 };
+
+  function railScroller() {
+    return uiEl.querySelector(".orb-thumbs") || uiEl.querySelector(".orb-grid") || uiEl.querySelector(".orb-list");
+  }
+
+  function rememberRail() {
+    const node = railScroller();
+    if (!node) return;
+    railScroll = { left: node.scrollLeft, top: node.scrollTop };
+  }
+
+  function restoreRail() {
+    const node = railScroller();
+    if (!node) return;
+    node.scrollLeft = railScroll.left;
+    node.scrollTop = railScroll.top;
+  }
+
+  function revealActiveThumb() {
+    uiEl.querySelectorAll(".orb-thumbs").forEach((node) => { if (node._orbSync) node._orbSync(); });
+    const scroller = railScroller();
+    const node = uiEl.querySelector(".orb-row.is-active, .orb-thumb.is-active");
+    if (!scroller || !node) return;
+    const host = scroller.getBoundingClientRect();
+    const rect = node.getBoundingClientRect();
+    const pad = 8;
+    if (rect.left < host.left + pad) scroller.scrollLeft -= host.left + pad - rect.left;
+    else if (rect.right > host.right - pad) scroller.scrollLeft += rect.right - (host.right - pad);
+    if (rect.top < host.top + pad) scroller.scrollTop -= host.top + pad - rect.top;
+    else if (rect.bottom > host.bottom - pad) scroller.scrollTop += rect.bottom - (host.bottom - pad);
+    railScroll = { left: scroller.scrollLeft, top: scroller.scrollTop };
+    shownScene = (active() && active().id) || "";
+  }
+
   const railObserver = typeof ResizeObserver !== "undefined"
     ? new ResizeObserver((entries) => {
       entries.forEach((entry) => { if (entry.target._orbSync) entry.target._orbSync(); });
     })
     : null;
-  function revealActiveThumb() {
-    const scene = active();
-    uiEl.querySelectorAll(".orb-thumbs").forEach((node) => { if (node._orbSync) node._orbSync(); });
-    if (!scene || shownScene === scene.id) return;
-    shownScene = scene.id;
-    const node = uiEl.querySelector(".orb-thumb.is-active, .orb-row.is-active");
-    if (node && node.scrollIntoView) node.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
-  }
 
   function renderChrome(force) {
     const sig = structureSig();
     if (!force && sig === chromeSig && uiEl.childElementCount) return;
     chromeSig = sig;
+    rememberRail();
     if (railObserver) uiEl.querySelectorAll(".orb-thumbs").forEach((node) => railObserver.unobserve(node));
     uiEl.replaceChildren();
     const scene = active();
@@ -1461,6 +1495,7 @@
       uiEl.append(tools);
       if (tour.placeKind) uiEl.append(el("div", "orb-hint", "Кликните по панораме"));
     }
+    restoreRail();
     paintDynamic();
   }
 
