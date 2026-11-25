@@ -52,6 +52,8 @@ function Shell() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
+  const [inspectorWidth, setInspectorWidth] = useState(() => readInspectorWidth());
+  const [resizing, setResizing] = useState(false);
 
   useEffect(() => {
     const hasFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
@@ -136,7 +138,38 @@ function Shell() {
         ) : null}
         <Stage />
         {mode === "edit" && rightOpen ? (
-          <aside className="hidden w-inspector shrink-0 border-l border-line bg-surface lg:block">
+          <aside
+            style={{ width: inspectorWidth }}
+            className={`orb-inspector relative hidden shrink-0 border-l border-line bg-surface lg:block ${resizing ? "" : "transition-[width] duration-200"}`}
+          >
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Ширина настроек"
+              title="Потяните, чтобы изменить ширину"
+              onPointerDown={(event) => {
+                event.preventDefault();
+                const startX = event.clientX;
+                const startW = inspectorWidth;
+                setResizing(true);
+                const move = (ev: PointerEvent) => {
+                  setInspectorWidth(clampInspector(startW - (ev.clientX - startX)));
+                };
+                const up = (ev: PointerEvent) => {
+                  const next = clampInspector(startW - (ev.clientX - startX));
+                  setInspectorWidth(next);
+                  setResizing(false);
+                  try { sessionStorage.setItem(INSPECTOR_KEY, String(next)); } catch { /* private mode */ }
+                  window.removeEventListener("pointermove", move);
+                  window.removeEventListener("pointerup", up);
+                };
+                window.addEventListener("pointermove", move);
+                window.addEventListener("pointerup", up);
+              }}
+              className="absolute top-0 -left-1 z-20 h-full w-2 cursor-col-resize touch-none"
+            >
+              <span className="absolute top-1/2 left-1/2 h-10 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-line" />
+            </div>
             <Settings />
           </aside>
         ) : null}
@@ -197,6 +230,21 @@ function Shell() {
       ) : null}
     </main>
   );
+}
+
+const INSPECTOR_KEY = "orbita-inspector-width";
+
+function clampInspector(value: number) {
+  const max = Math.min(560, Math.max(340, window.innerWidth - 520));
+  return Math.round(Math.min(max, Math.max(260, value)));
+}
+
+function readInspectorWidth() {
+  try {
+    const saved = Number(sessionStorage.getItem(INSPECTOR_KEY));
+    if (Number.isFinite(saved) && saved > 0) return clampInspector(saved);
+  } catch { /* private mode */ }
+  return 320;
 }
 
 function DockButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: string }) {

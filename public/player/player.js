@@ -919,6 +919,7 @@
       thumbs.setAttribute("aria-label", "Сцены");
       tour.scenes.forEach((item) => thumbs.append(sceneThumb(item, scene, "orb-thumb")));
       bar.append(thumbs);
+      bindThumbRail(thumbs);
     }
     if (showArrows) bar.append(iconButton("orb-arrow", "Следующая сцена", SVG.right, () => step(1)));
     if (nav === "float" && floatPos) {
@@ -928,12 +929,80 @@
       bar.style.transform = "none";
     }
     uiEl.append(bar);
+    revealActiveThumb();
+  }
+
+  function railVertical() {
+    const side = document.documentElement.dataset.carousel;
+    const nav = document.documentElement.dataset.nav;
+    return side === "left" || side === "right" || nav === "side";
+  }
+
+  function bindThumbRail(thumbs) {
+    const wrap = el("div", "orb-rail");
+    thumbs.replaceWith(wrap);
+    const prev = el("button", "orb-nudge orb-nudge-prev");
+    prev.type = "button";
+    prev.setAttribute("aria-label", "Прокрутить ленту назад");
+    prev.innerHTML = SVG.left;
+    const next = el("button", "orb-nudge orb-nudge-next");
+    next.type = "button";
+    next.setAttribute("aria-label", "Прокрутить ленту вперёд");
+    next.innerHTML = SVG.right;
+    wrap.append(prev, thumbs, next);
+    const scrollByDir = (dir) => {
+      const vertical = railVertical();
+      const amount = ((vertical ? thumbs.clientHeight : thumbs.clientWidth) || 160) * 0.72;
+      thumbs.scrollBy(vertical ? { top: dir * amount, behavior: "smooth" } : { left: dir * amount, behavior: "smooth" });
+    };
+    prev.addEventListener("click", (event) => { event.stopPropagation(); scrollByDir(-1); });
+    next.addEventListener("click", (event) => { event.stopPropagation(); scrollByDir(1); });
+    const sync = () => {
+      const vertical = railVertical();
+      wrap.classList.toggle("is-vert", vertical);
+      const pos = vertical ? thumbs.scrollTop : thumbs.scrollLeft;
+      const max = vertical ? thumbs.scrollHeight - thumbs.clientHeight : thumbs.scrollWidth - thumbs.clientWidth;
+      const overflow = max > 6;
+      wrap.classList.toggle("is-overflow", overflow);
+      wrap.classList.toggle("can-prev", overflow && pos > 4);
+      wrap.classList.toggle("can-next", overflow && pos < max - 4);
+    };
+    thumbs._orbSync = sync;
+    thumbs.addEventListener("scroll", sync, { passive: true });
+    thumbs.addEventListener("wheel", (event) => {
+      const vertical = railVertical();
+      const max = vertical ? thumbs.scrollHeight - thumbs.clientHeight : thumbs.scrollWidth - thumbs.clientWidth;
+      if (max <= 6) return;
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      if (!delta) return;
+      if (vertical) thumbs.scrollTop += delta;
+      else thumbs.scrollLeft += delta;
+      event.preventDefault();
+    }, { passive: false });
+    if (railObserver) railObserver.observe(thumbs);
+    requestAnimationFrame(sync);
+  }
+
+  let shownScene = "";
+  const railObserver = typeof ResizeObserver !== "undefined"
+    ? new ResizeObserver((entries) => {
+      entries.forEach((entry) => { if (entry.target._orbSync) entry.target._orbSync(); });
+    })
+    : null;
+  function revealActiveThumb() {
+    const scene = active();
+    uiEl.querySelectorAll(".orb-thumbs").forEach((node) => { if (node._orbSync) node._orbSync(); });
+    if (!scene || shownScene === scene.id) return;
+    shownScene = scene.id;
+    const node = uiEl.querySelector(".orb-thumb.is-active, .orb-row.is-active");
+    if (node && node.scrollIntoView) node.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
   }
 
   function renderChrome(force) {
     const sig = structureSig();
     if (!force && sig === chromeSig && uiEl.childElementCount) return;
     chromeSig = sig;
+    if (railObserver) uiEl.querySelectorAll(".orb-thumbs").forEach((node) => railObserver.unobserve(node));
     uiEl.replaceChildren();
     const scene = active();
     if (!scene) return;
@@ -1086,6 +1155,7 @@
     if (sound) sound.setAttribute("aria-pressed", muted ? "false" : "true");
     panoEl.classList.toggle("is-placing", Boolean(tour.placeKind) && tour.mode === "edit");
     paintIntro();
+    revealActiveThumb();
   }
 
   function step(dir) {

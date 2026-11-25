@@ -428,7 +428,7 @@ export function Settings() {
         {tab === "presets" && (
           <div className="pt-4">
             <Section title="Темы оформления">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="inspector-grid grid grid-cols-2 gap-2">
                 {PRESETS.map((preset) => {
                   const active = theme.preset === preset.id;
                   return (
@@ -450,7 +450,7 @@ export function Settings() {
               </div>
             </Section>
             <Section title="Быстрые стили навигации">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="inspector-grid grid grid-cols-2 gap-2">
                 {NAV_STYLES.map((nav) => (
                   <button
                     key={nav.id}

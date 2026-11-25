@@ -55,6 +55,10 @@
 }
 
 @layer components {
+  .orb-inspector { container-type: inline-size; }
+  @container (max-width: 300px) {
+    .inspector-grid { grid-template-columns: 1fr; }
+  }
   .range {
     --pct: 50%;
     appearance: none;
