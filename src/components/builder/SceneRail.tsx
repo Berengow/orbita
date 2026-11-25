@@ -66,12 +66,14 @@ export function SceneRail({ onAdd }: { onAdd: () => void }) {
                 event.preventDefault();
                 reorder(event.dataTransfer.getData("text/plain"), scene.id);
               }}
-              className={`group flex items-center gap-2 rounded-xl border p-1.5 ${
-                active ? "border-accent bg-surface-2" : "border-transparent hover:bg-surface-2"
+              className={`group relative flex items-center gap-2.5 rounded-2xl border p-1.5 transition-colors ${
+                active
+                  ? "border-accent/70 bg-accent/10 shadow-[inset_3px_0_0_var(--color-accent)]"
+                  : "border-transparent hover:border-line hover:bg-surface-2"
               }`}
             >
               <button type="button" onClick={() => setActive(scene.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
-                <span className="pano-thumb size-12 shrink-0 rounded-lg">
+                <span className="pano-thumb size-14 shrink-0 overflow-hidden rounded-xl ring-1 ring-white/10">
                   {src || scene.thumbId ? (
                     <ViewThumb
                       src={scene.thumbId ? (urls[scene.thumbId] ?? "") : (src ?? "")}

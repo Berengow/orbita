@@ -130,18 +130,18 @@ export function Stage() {
         />
         ) : null}
       </div>
-      <div className="flex h-11 shrink-0 items-center gap-3 overflow-hidden border-t border-line px-3 text-xs sm:gap-4 sm:px-4 sm:text-sm">
+      <div className="flex h-12 shrink-0 items-center gap-2 overflow-hidden border-t border-line bg-surface/80 px-3 text-xs backdrop-blur sm:px-4">
         <button
           type="button"
-          className={placeKind ? "text-accent" : "text-fg"}
+          className={`h-8 rounded-full px-3 ${placeKind ? "bg-accent text-accent-ink" : "bg-surface-2 text-fg hover:bg-surface-3"}`}
           onClick={() => setPlace(placeKind === "scene" ? null : "scene")}
         >
-          Поставить точку
+          {placeKind ? "Кликните по панораме" : "Поставить точку"}
         </button>
-        <button type="button" className="text-muted disabled:opacity-40" disabled={!hasScene} onClick={remember}>
+        <button type="button" className="h-8 rounded-full px-3 text-muted hover:bg-surface-2 hover:text-fg disabled:opacity-40" disabled={!hasScene} onClick={remember}>
           Запомнить ракурс
         </button>
-        <span className="tabular-nums text-faint">yaw {yaw > 0 ? "+" : ""}{yaw}°</span>
+        <span className="ml-auto tabular-nums text-faint">yaw {yaw > 0 ? "+" : ""}{yaw}°</span>
       </div>
     </div>
   );

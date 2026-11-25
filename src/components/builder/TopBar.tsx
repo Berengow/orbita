@@ -48,10 +48,10 @@ export function TopBar() {
           const start = project.settings.startSceneId;
           if (start) setActive(start);
           setMode("play");
-        }} className="hidden h-9 rounded-lg border border-line px-3 text-sm sm:inline">
+        }} className="hidden h-9 rounded-full border border-accent/50 bg-accent/10 px-3.5 text-sm text-fg sm:inline">
           Просмотр
         </button>
-        <button type="button" onClick={() => setDialog("export")} className="inline-flex h-9 items-center gap-1 rounded-lg bg-accent px-3 text-sm font-medium text-accent-ink">
+        <button type="button" onClick={() => setDialog("export")} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-accent px-3.5 text-sm font-medium text-accent-ink shadow-[0_8px_20px_rgba(227,155,60,0.25)]">
           <Download className="size-4" />
           <span className="hidden sm:inline">Скачать сайт</span>
         </button>

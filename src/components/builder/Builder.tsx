@@ -188,7 +188,7 @@ function Shell() {
           </div>
         ) : null}
         {mode === "play" ? (
-          <button type="button" onClick={() => setMode("edit")} className="absolute top-3 left-3 z-10 h-10 rounded-full bg-surface px-4 text-sm text-fg">
+          <button type="button" onClick={() => setMode("edit")} className="absolute top-3 left-3 z-10 h-10 rounded-full border border-white/15 bg-black/55 px-4 text-sm text-white backdrop-blur">
             В редактор
           </button>
         ) : null}
@@ -198,8 +198,11 @@ function Shell() {
           </div>
         ) : null}
         {dragging ? (
-          <div className="absolute inset-0 z-30 grid place-items-center bg-bg/80 text-center">
-            <p className="font-display text-2xl">Отпустите панорамы</p>
+          <div className="absolute inset-0 z-30 grid place-items-center bg-bg/75 backdrop-blur-sm">
+            <div className="rounded-3xl border border-dashed border-accent/70 bg-surface/80 px-10 py-8 text-center shadow-2xl">
+              <p className="font-display text-2xl tracking-wide">Отпустите панорамы</p>
+              <p className="mt-2 text-sm text-muted">Они станут сценами в том порядке, в каком вы их перетащили</p>
+            </div>
           </div>
         ) : null}
       </div>
@@ -224,7 +227,7 @@ function Shell() {
       />
       {dialog ? <Overlays /> : null}
       {toast ? (
-        <div className="pointer-events-none fixed bottom-16 left-1/2 z-50 -translate-x-1/2 rounded-full bg-fg px-4 py-2 text-sm text-bg">
+        <div className="pointer-events-none fixed bottom-16 left-1/2 z-50 -translate-x-1/2 rounded-full border border-white/10 bg-fg px-4 py-2 text-sm text-bg shadow-xl">
           {toast}
         </div>
       ) : null}

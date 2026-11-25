@@ -680,8 +680,8 @@ function LookMark({ id }: { id: string }) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mb-5">
-      <h3 className="mb-2 text-2xs font-semibold uppercase tracking-wider text-muted">{title}</h3>
+    <section className="mb-3 rounded-2xl border border-line/70 bg-bg/35 p-3">
+      <h3 className="mb-2.5 text-2xs font-semibold uppercase tracking-[0.14em] text-muted">{title}</h3>
       {children}
     </section>
   );

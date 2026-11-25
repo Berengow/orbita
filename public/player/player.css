@@ -1365,3 +1365,44 @@ html[data-navactive="on"] .orb-row.is-active { background: var(--orb-nav-active)
 @media (prefers-reduced-motion: reduce) {
   .orb-thumb, .orb-carousel, .orb-nav-launch, .orb-radial-item, .orb-thumbs, .orb-row { transition: none; scroll-behavior: auto; }
 }
+
+.orb-mark::before {
+  box-shadow:
+    0 0 0 7px color-mix(in srgb, var(--orb-point) 28%, transparent),
+    0 10px 22px rgba(0, 0, 0, 0.38);
+}
+.orb-label {
+  letter-spacing: 0.01em;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+}
+.orb-loader { height: 2px; background: color-mix(in srgb, var(--orb-text) 10%, transparent); }
+.orb-loader span {
+  width: 42%;
+  background: linear-gradient(90deg, transparent, var(--orb-accent), #fff6e8, var(--orb-accent), transparent);
+}
+.orb-intro {
+  background:
+    radial-gradient(ellipse at center, color-mix(in srgb, var(--orb-accent) 18%, transparent), transparent 55%),
+    color-mix(in srgb, #100e0c 62%, transparent);
+}
+.orb-sheet { box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45); }
+.orb-cta { box-shadow: 0 10px 24px color-mix(in srgb, var(--orb-accent) 35%, transparent); }
+.orb-pop { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); }
+.orb-row {
+  background: color-mix(in srgb, var(--orb-text) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--orb-text) 10%, transparent);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+}
+.orb-row:hover {
+  background: color-mix(in srgb, var(--orb-text) 12%, transparent) !important;
+}
+.orb-row.is-active {
+  border-color: color-mix(in srgb, var(--orb-accent) 75%, transparent) !important;
+  box-shadow: inset 3px 0 0 var(--orb-accent), 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+.orb-row img { box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35); }
+.orb-pano.is-fade { animation: orb-fade 0.72s ease; }
+.orb-pano.is-zoom { animation: orb-zoom 0.72s ease; }
+html[data-fade="on"] .orb-rail.is-vert.is-overflow .orb-thumbs {
+  mask-image: linear-gradient(180deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+}
