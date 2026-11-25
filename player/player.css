@@ -267,10 +267,15 @@ html[data-carousel="right"] .orb-carousel { right: 14px; }
 .orb-thumbs {
   display: flex;
   gap: var(--orb-gap, 8px);
-  max-width: min(46vw, 380px);
+  max-width: min(70vw, 720px);
+  min-width: 0;
   overflow: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--orb-text) 32%, transparent) transparent;
 }
 
 html[data-carousel="left"] .orb-thumbs,
@@ -833,13 +838,9 @@ html[data-nav="strip"] .orb-carousel {
 }
 html[data-nav="strip"] .orb-thumbs,
 html[data-carousel="bottom"] .orb-thumbs {
-  max-width: min(70vw, 760px);
+  max-width: min(70vw, 720px);
   gap: 8px;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent);
 }
-html[data-nav="strip"] .orb-thumbs::-webkit-scrollbar { display: none; }
 html[data-nav="strip"] .orb-thumb {
   scroll-snap-align: center;
   width: var(--orb-thumb, 88px);
@@ -894,6 +895,10 @@ html[data-nav="grid"] .orb-grid,
 
 /* List / Sheet / Groups / Search */
 .orb-list, .orb-sheet {
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--orb-text) 28%, transparent) transparent;
   background: color-mix(in srgb, var(--orb-panel) 86%, transparent);
   backdrop-filter: blur(calc(var(--orb-blur, 8px) + 4px));
   border: 1px solid color-mix(in srgb, var(--orb-text) 12%, transparent);
@@ -995,9 +1000,58 @@ html[data-nav="grid"] .orb-grid,
   transform: scale(1.06);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .orb-thumb, .orb-carousel, .orb-nav-launch, .orb-radial-item { transition: none; }
+.orb-rail {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: min(70vw, 720px);
 }
+.orb-rail.is-vert {
+  flex-direction: column;
+  max-width: none;
+  max-height: 62vh;
+}
+.orb-rail.is-vert .orb-thumbs {
+  flex-direction: column;
+  max-height: 56vh;
+  max-width: none;
+}
+.orb-nudge {
+  position: absolute;
+  z-index: 3;
+  display: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  color: var(--orb-text);
+  background: color-mix(in srgb, var(--orb-panel) 88%, #000);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.32);
+  cursor: pointer;
+}
+.orb-nudge svg { width: 14px; height: 14px; }
+.orb-rail.is-overflow .orb-nudge { display: grid; }
+.orb-rail:not(.can-prev) .orb-nudge-prev,
+.orb-rail:not(.can-next) .orb-nudge-next { opacity: 0; pointer-events: none; }
+.orb-nudge-prev { left: 4px; top: 50%; transform: translateY(-50%); }
+.orb-nudge-next { right: 4px; top: 50%; transform: translateY(-50%); }
+.orb-rail.is-vert .orb-nudge-prev { left: 50%; top: 4px; transform: translateX(-50%) rotate(90deg); }
+.orb-rail.is-vert .orb-nudge-next { left: 50%; right: auto; bottom: 4px; top: auto; transform: translateX(-50%) rotate(90deg); }
+.orb-rail.can-prev .orb-thumbs { mask-image: linear-gradient(90deg, transparent, #000 22px); }
+.orb-rail.can-next .orb-thumbs { mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent); }
+.orb-rail.can-prev.can-next .orb-thumbs {
+  mask-image: linear-gradient(90deg, transparent, #000 20px, #000 calc(100% - 20px), transparent);
+}
+.orb-rail.is-vert.can-prev .orb-thumbs { mask-image: linear-gradient(#0000, #000 22px); }
+.orb-rail.is-vert.can-next .orb-thumbs { mask-image: linear-gradient(#000 calc(100% - 22px), #0000); }
+.orb-rail.is-vert.can-prev.can-next .orb-thumbs {
+  mask-image: linear-gradient(#0000, #000 18px, #000 calc(100% - 18px), #0000);
+}
+html[data-nav="side"] .orb-carousel { overflow: visible; }
+html[data-nav="float"] .orb-rail { max-width: min(56vw, 520px); }
 
 .orb-thumb {
   box-shadow: inset 0 -36px 22px -18px rgba(0, 0, 0, 0.75), 0 6px 16px rgba(0, 0, 0, 0.28);
@@ -1007,4 +1061,7 @@ html[data-nav="grid"] .orb-grid,
   height: 42px;
   object-fit: cover;
   object-position: center 40%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .orb-thumb, .orb-carousel, .orb-nav-launch, .orb-radial-item, .orb-thumbs { transition: none; scroll-behavior: auto; }
 }
